@@ -1,0 +1,10 @@
+[Unit]
+Description=Say hi at boot time and log boot time
+After=multi-user.target
+
+[Service]
+ExecStart=/home/ubuml/.pyenv/shims/python /home/ubuml/github_repos/infra_util_microservice/main.py
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
