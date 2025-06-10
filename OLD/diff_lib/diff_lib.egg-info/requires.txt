@@ -1,0 +1,4 @@
+pytest-runner
+
+[:python_version >= "3.13"]
+pytest==4.4.1

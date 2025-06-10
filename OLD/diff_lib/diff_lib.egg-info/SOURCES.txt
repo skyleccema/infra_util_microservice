@@ -1,0 +1,9 @@
+pyproject.toml
+diff_lib/__init__.py
+diff_lib/myfunctions.py
+diff_lib.egg-info/PKG-INFO
+diff_lib.egg-info/SOURCES.txt
+diff_lib.egg-info/dependency_links.txt
+diff_lib.egg-info/requires.txt
+diff_lib.egg-info/top_level.txt
+tests/test_module.py

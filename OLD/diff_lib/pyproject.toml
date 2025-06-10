@@ -1,0 +1,7 @@
+[project]
+name = "diff_lib"
+version = "0.0.1"
+dependencies = [
+    "pytest-runner",
+    'pytest==4.4.1; python_version>="3.13"',
+]

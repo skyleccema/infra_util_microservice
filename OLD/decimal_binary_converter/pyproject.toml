@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "decimal_binary_converter"
+version = "0.1.0"
+authors = [{name = "Marco Lecce", email = "marco.lecce@skytv.it"}]
+description = "long description here"
+readme = "README.md"
+license = { file = "LICENSE" }
+dependencies = []
