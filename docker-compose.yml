@@ -3,7 +3,7 @@ version: "3"
 services:
   app:
     container_name: "infra-hello-flask"
-    image: infra_util_microservice-app:latest
+    image: infra_util_microservice-app:0.1
     ports:
       - 5000:5000
     networks:
