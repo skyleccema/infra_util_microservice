@@ -1,6 +1,7 @@
-from os import environ
+from os import environ, abort
 from flask import Flask, make_response
 from flask_cors import CORS
+from traceback import format_exc, print_exc
 from infra_utils.QueryInfradb import (query_stb_info,
                                       get_stb_status_broken,
                                       update_broken_status,
@@ -23,8 +24,19 @@ from dotenv import load_dotenv
 
 load_dotenv('.env', verbose=True)
 
+# import logging, logging.config, yaml
+# logging.config.dictConfig(yaml.full_load(open('logging.conf', 'w')))
+
+# logfile    = logging.getLogger('file')
+# logconsole = logging.getLogger('console')
+# logfile.debug("Debug FILE")
+# logconsole.debug("Debug CONSOLE")
+
+import logging
 
 app = Flask(__name__)
+
+logging.basicConfig(level=logging.INFO)
 
 # CORS 
 CORS(app)
@@ -40,7 +52,19 @@ def hello_world():
     # nell'except importo la libreria traceback
     # nel log uso la funz di tracecback.formatexec
     # così ho tutto lo stack printato e loggato :)
-    return make_response(hello())
+    try:
+        response = hello()
+        if response == "development":
+            raise ValueError(response)
+        result = make_response(hello())
+        app.logger.info('LOG_ML: succesfully read and setted ENV')
+    except ValueError as e:
+        # print_exc()
+        # format_exc()
+        app.logger.info('LOG_ML: ERROR - %s read ENV', str(e))
+        result = make_response("None")
+    # result = make_response(hello())
+    return result
 
 # missing endpoints
 # TBT api_fetch_slots_versions_with_dinamic_filter
