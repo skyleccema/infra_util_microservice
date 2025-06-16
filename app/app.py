@@ -1,5 +1,6 @@
 from os import environ, abort
 from flask import Flask, make_response, abort
+from flask_restx import Resource, Api, fields
 from flask_cors import CORS
 from traceback import format_exc, print_exc
 from infra_utils.QueryInfradb import (query_stb_info,
@@ -35,38 +36,83 @@ load_dotenv('.env', verbose=True)
 import logging
 
 app = Flask(__name__)
+api = Api(app)
 
 logging.basicConfig(level=logging.INFO, filename="/app/logs/app.log", filemode="w")
 
 # CORS 
 CORS(app)
 # successivamente accetteremo richieste da subset di IP
-
 def hello():
     return environ.get("ENV")
 
-@app.route("/")
-def hello_world():
-    # try-except log e tutte le info base su oggetti Flask
-    # gestione log Flask con sua libreria ma devo farlo bene
-    # nell'except importo la libreria traceback
-    # nel log uso la funz di tracecback.formatexec
-    # così ho tutto lo stack printato e loggato :)
-    try:
-        response = hello()
-        if response == "development":
-            raise ValueError(response)
-        result = make_response(hello())
-        app.logger.info('LOG_ML: succesfully read and setted ENV')
-    except ValueError as e:
-        # print_exc()
-        # format_exc()
-        app.logger.info('LOG_ML: ERROR - %s read ENV', str(e))
-        app.logger.error(format_exc())
-        result = make_response("None")
-        abort(400)
-    # result = make_response(hello())
-    return result
+model = api.model('Model',{
+    'note': fields.String,
+    'num': fields.Integer
+})
+
+class AnnotationDao(object):
+    def __init__(self, note, num):
+        self.note = note
+        self.num = num
+        # won't be sent in http response
+        self.status = 'active'
+
+@api.route('/note')
+class Note(Resource):
+    @api.marshal_with(model)
+    def get(self, **kwargs):
+        return AnnotationDao(note= "my public note", num=11)
+
+@api.route('/hello')
+class HelloWorld(Resource):
+    def get(self):
+        # return { 'hello': 'world' }
+        try:
+            response = hello()
+            if response == "development":
+                raise ValueError(response)
+            result = make_response(response)
+            app.logger.info('LOG_ML: succesfully read and setted ENV')
+        except ValueError as e:
+            # print_exc()
+            # format_exc()
+            app.logger.info('LOG_ML: ERROR - %s read ENV', str(e))
+            app.logger.error(format_exc())
+            result = make_response("None")
+            abort(400)
+        # result = make_response(hello())
+        return result
+    
+
+
+
+
+# def hello():
+#     return environ.get("ENV")
+
+# @app.route("/")
+# def hello_world():
+#     # try-except log e tutte le info base su oggetti Flask
+#     # gestione log Flask con sua libreria ma devo farlo bene
+#     # nell'except importo la libreria traceback
+#     # nel log uso la funz di tracecback.formatexec
+#     # così ho tutto lo stack printato e loggato :)
+#     try:
+#         response = hello()
+#         if response == "development":
+#             raise ValueError(response)
+#         result = make_response(hello())
+#         app.logger.info('LOG_ML: succesfully read and setted ENV')
+#     except ValueError as e:
+#         # print_exc()
+#         # format_exc()
+#         app.logger.info('LOG_ML: ERROR - %s read ENV', str(e))
+#         app.logger.error(format_exc())
+#         result = make_response("None")
+#         abort(400)
+#     # result = make_response(hello())
+#     return result
 
 # missing endpoints
 # TBT api_fetch_slots_versions_with_dinamic_filter
@@ -174,3 +220,5 @@ def api_fetch_rack_slot_type_by_project_grouped_by_rack(proj):
 def api_fetch_rack_slot_by_project_and_type_grouped_by_rack(proj, typ):
     return fetch_rack_slot_by_project_and_type_grouped_by_rack(proj,typ)
 
+if __name__ == "__main__":
+    app.run(debug=True)
