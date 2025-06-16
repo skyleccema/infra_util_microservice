@@ -12,6 +12,8 @@ services:
       - type: bind
         source: /home/ubuml/github_repos/infra_util_microservice/logs
         target: /app/logs
-      # /home/ubuml/github_repos/infra_util_microservice/logs:/app/logs:rw
+      - type: bind
+        source: /home/ubuml/github_repos/infra_util_microservice/env
+        target: /app/env
 networks:
   infra_util_net:

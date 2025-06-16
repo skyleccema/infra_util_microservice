@@ -1,6 +1,6 @@
 from os import environ, abort
 from flask import Flask, make_response, abort
-from flask_restx import Resource, Api, fields
+from flask_restx import Resource, Api, fields, marshal
 from flask_cors import CORS
 from traceback import format_exc, print_exc
 from infra_utils.QueryInfradb import (query_stb_info,
@@ -22,8 +22,8 @@ from infra_utils.QueryInfradb import (query_stb_info,
                                       fetch_rack_slot_type_by_project_grouped_by_rack,
                                       fetch_rack_slot_by_project_and_type_grouped_by_rack)
 from dotenv import load_dotenv
-
-load_dotenv('.env', verbose=True)
+dotenv_path = '/app/env/.env'
+load_dotenv(dotenv_path, verbose=True)
 
 # import logging, logging.config, yaml
 # logging.config.dictConfig(yaml.full_load(open('logging.conf', 'w')))
@@ -43,46 +43,71 @@ logging.basicConfig(level=logging.INFO, filename="/app/logs/app.log", filemode="
 # CORS 
 CORS(app)
 # successivamente accetteremo richieste da subset di IP
+
 def hello():
     return environ.get("ENV")
 
 model = api.model('Model',{
-    'note': fields.String,
-    'num': fields.Integer
+    'msg': fields.String
 })
 
-class AnnotationDao(object):
-    def __init__(self, note, num):
-        self.note = note
-        self.num = num
+class HelloDao(object):
+    def __init__(self, msg):
+        self.msg = msg
         # won't be sent in http response
         self.status = 'active'
 
-@api.route('/note')
-class Note(Resource):
-    @api.marshal_with(model)
-    def get(self, **kwargs):
-        return AnnotationDao(note= "my public note", num=11)
+def marshal_hello(http_code_default):
+    return_code = http_code_default
+    try:
+        response = hello()
+        if response != "development":
+            raise ValueError(response)
+        result = response
+        app.logger.info('LOG_ML: succesfully read and setted %s environment', response)
+    except ValueError as e:
+        app.logger.info('LOG_ML: ERROR - %s unrecognized environment', str(e))
+        app.logger.error(format_exc())
+        result = None
+        # abort(400)
+        return_code = 400
+    # return HelloDao(msg=response)
+    # return marshal(HelloDao(msg=response), model), 200
+    finally:
+        return marshal(HelloDao(msg=result), model), return_code
+
 
 @api.route('/hello')
 class HelloWorld(Resource):
+    # @api.marshal_with(model)
     def get(self):
-        # return { 'hello': 'world' }
-        try:
-            response = hello()
-            if response == "development":
-                raise ValueError(response)
-            result = make_response(response)
-            app.logger.info('LOG_ML: succesfully read and setted ENV')
-        except ValueError as e:
-            # print_exc()
-            # format_exc()
-            app.logger.info('LOG_ML: ERROR - %s read ENV', str(e))
-            app.logger.error(format_exc())
-            result = make_response("None")
-            abort(400)
-        # result = make_response(hello())
-        return result
+        return marshal_hello(http_code_default=500)
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        # return_code = 500
+        # try:
+        #     response = hello()
+        #     if response == "development":
+        #         raise ValueError(response)
+        #     result = response
+        #     app.logger.info('LOG_ML: succesfully read and setted ENV')
+        # except ValueError as e:
+        #     app.logger.info('LOG_ML: ERROR - %s read ENV', str(e))
+        #     app.logger.error(format_exc())
+        #     result = "None"
+        #     # abort(400)
+        #     return_code = 400
+        # # return HelloDao(msg=response)
+        # # return marshal(HelloDao(msg=response), model), 200
+        # finally:
+        #     return marshal(HelloDao(msg=result), model), return_code
     
 
 
