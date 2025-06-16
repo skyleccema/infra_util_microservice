@@ -3,11 +3,18 @@ version: "3"
 services:
   app:
     container_name: "infra-hello-flask"
-    image: infra_util_microservice-app:0.1
+    # image: infra_util_microservice-app:0.1
+    build: .
     ports:
       - 5000:5000
     networks:
       - infra_util_net
+    develop:
+      watch:
+        - action: rebuild
+          path: ./app
+          target: /app
+          ignore: /app/logs/
     volumes:
       - type: bind
         source: /home/ubuml/github_repos/infra_util_microservice/logs
