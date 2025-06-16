@@ -8,5 +8,10 @@ services:
       - 5000:5000
     networks:
       - infra_util_net
+    volumes:
+      - type: bind
+        source: /home/ubuml/github_repos/infra_util_microservice/logs
+        target: /app/logs
+      # /home/ubuml/github_repos/infra_util_microservice/logs:/app/logs:rw
 networks:
   infra_util_net:

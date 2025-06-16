@@ -1,5 +1,5 @@
 from os import environ, abort
-from flask import Flask, make_response
+from flask import Flask, make_response, abort
 from flask_cors import CORS
 from traceback import format_exc, print_exc
 from infra_utils.QueryInfradb import (query_stb_info,
@@ -36,7 +36,7 @@ import logging
 
 app = Flask(__name__)
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, filename="/app/logs/app.log", filemode="w")
 
 # CORS 
 CORS(app)
@@ -62,7 +62,9 @@ def hello_world():
         # print_exc()
         # format_exc()
         app.logger.info('LOG_ML: ERROR - %s read ENV', str(e))
+        app.logger.error(format_exc())
         result = make_response("None")
+        abort(400)
     # result = make_response(hello())
     return result
 

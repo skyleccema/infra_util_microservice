@@ -2,7 +2,7 @@
 
 FROM python:3.13
 
-RUN mkdir -p /app/infra_utils
+RUN mkdir -p /app/infra_utils /app/logs
 COPY ./env /app
 COPY ./app /app
 COPY ./infra_utils /app/infra_utils
