@@ -11,7 +11,7 @@ services:
       - infra_util_net
     develop:
       watch:
-        - action: rebuild
+        - action: sync+restart
           path: ./app
           target: /app
           ignore: /app/logs/
