@@ -52,6 +52,25 @@ class MarshallingHandler:
             'List': fields.List(fields.Nested(self.rack_slot_list_frsbpat))
         })
 
+        # CUSTOM FUNCTION HANDLER
+
+        ### TUPLE return
+
+        self.get_rack_slot_by_ip_model = {
+            'rack_ip': fields.String,
+            'slot_number': fields.Integer
+        }
+
+        self.query_stb_info_model = {
+            'stb_type': fields.String,
+            'pin': fields.String,
+            'ip': fields.String,
+            'sw_ver': fields.String,
+            'territory': fields.String,
+            'name': fields.String
+        }
+
+
     def hello(self):
         return environ.get("ENV")
 
@@ -72,7 +91,13 @@ class MarshallingHandler:
             return marshal(HelloDao(msg=result), self.model), return_code
 
     #marshalling methods
-    def marshal_dict(self, func_output: dict, http_code: int) -> tuple[object, int]:
+    def marshal_dict(self, func_output: dict, http_code: int, func_name: str=None) -> tuple[object, int]:
+        if func_name == "get_rack_slot_by_ip":
+            model = self.get_rack_slot_by_ip_model
+            dao = ToupleGetRackSlotByIpDao(func_output)
+        else:
+            model = self.dict_model
+            dao = DictDao(func_output)
         if func_output == {} or func_output is None:
             raise ValueError(func_output)
         # try:
@@ -83,8 +108,28 @@ class MarshallingHandler:
         #     app.logger.error(format_exc())
         #     func_output = None
         #     http_code = 400
-        self.app.logger.info("DICT IS BETTER")
-        return marshal(data=DictDao(func_output), fields=self.dict_model), http_code
+        self.app.logger.info(func_name)
+        return marshal(data=dao, fields=model), http_code
+
+    def marshal_tuple(self, func_output: tuple, http_code: int, func_name: str=None) -> tuple[object, int]:
+        if func_name == "get_rack_slot_by_ip":
+            model = self.get_rack_slot_by_ip_model
+            dao = ToupleGetRackSlotByIpDao(func_output)
+        else:
+            model = self.dict_model
+            dao = DictDao(func_output)
+        if func_output == {} or func_output is None:
+            raise ValueError(func_output)
+        # try:
+        #     if func_output == {} or func_output is None:
+        #         raise ValueError(func_output)
+        # except ValueError as e:
+        #     app.logger.info(e)
+        #     app.logger.error(format_exc())
+        #     func_output = None
+        #     http_code = 400
+        self.app.logger.info(func_name)
+        return marshal(data=dao, fields=model), http_code
 
     def marshal_str(self, func_output: dict, http_code: int) -> tuple[object, int]:
         self.app.logger.info("Str func_output %s\ntype: %s", func_output, type(func_output))
@@ -152,6 +197,11 @@ class HelloDao(object):
         # won't be sent in http response
         self.status = 'active'
 
+#Per Function specific class
+class ToupleGetRackSlotByIpDao(object):
+    def __init__(self, tuple_rack_slot: tuple):
+        self.rack_ip = tuple_rack_slot[0]
+        self.slot_number = tuple_rack_slot[1]
 
 
 

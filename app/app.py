@@ -24,16 +24,18 @@ from dotenv import load_dotenv
 import logging
 from api_marshalling import MarshallingHandler
 
-# dotenv_path = '/app/env/.env' # container
-dotenv_path = '/home/ubuml/github_repos/infra_util_microservice/env/.env' # local dev
+
+dotenv_path = 'env/.env' # container in /app/ and locally in {HOME}/github_repo
+logfile = "logs/app.log" # container in /app/ and locally in {HOME}/github_repo
+
+logging.basicConfig(level=logging.INFO, filename=logfile, filemode="w") #container
+
 load_dotenv(dotenv_path, verbose=True)
 
 app = Flask(__name__)
 api = Api(app)
 mh=MarshallingHandler(api, app)
 
-# logging.basicConfig(level=logging.INFO, filename="/app/logs/app.log", filemode="w") #container
-logging.basicConfig(level=logging.INFO, filename="/home/ubuml/github_repos/infra_util_microservice/test/app.log", filemode="w") # local dev
 
 
 # CORS 
@@ -79,7 +81,7 @@ class FetchSlotsVersionsWithDynamicFilterNone(Resource):
 @api.route("/query_stb_info/<ip>/<slot>")
 class QueryStbInfo(Resource):
     def get(self, ip, slot):
-        return mh.marshal_dict(query_stb_info/(ip, slot), 200)
+        return mh.marshal_dict(query_stb_info(ip, slot), 200)
 
 # tested with http://localhost:5000/get_stb_status_broken/10.170.0.199/4
 # library function return a bool False
@@ -125,12 +127,13 @@ class GetAllStb(Resource):
 #     return make_response(put_stb(stb))
 
 # tested with http://127.0.0.1:5000/get_rack_slot_by_ip/10.170.0.177
-# library function return a int 2
+# library function return a tuple "10.170.0.167", 3
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
 @api.route("/get_rack_slot_by_ip/<ip>")
 class GetRackSlotByIp(Resource):
     def get(self, ip):
-        return mh.marshal_dict({ "slot": get_rack_slot_by_ip(ip)}, 200)
+        app.logger.info(type(get_rack_slot_by_ip(ip)))
+        return mh.marshal_tuple(get_rack_slot_by_ip(ip), 200, "get_rack_slot_by_ip")
 
 # tested with http://127.0.0.1:5000/available_slots/CERRI/Llama
 # library function return a int 2
