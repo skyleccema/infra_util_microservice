@@ -14,13 +14,15 @@ services:
         - action: sync+restart
           path: ./app
           target: /app
-          ignore: /app/logs/
+          ignore:
+            - "/app/logs/"
     volumes:
       - type: bind
-        source: /home/ubuml/github_repos/infra_util_microservice/logs
+        source: ${HOME}/github_repos/infra_util_microservice/logs
         target: /app/logs
+        read_only: False
       - type: bind
-        source: /home/ubuml/github_repos/infra_util_microservice/env
+        source: ${HOME}/github_repos/infra_util_microservice/env
         target: /app/env
 networks:
   infra_util_net:

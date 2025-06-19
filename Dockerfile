@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.13
+FROM python:3.12
 
 RUN mkdir -p /app/infra_utils /app/logs
 COPY ./env /app
