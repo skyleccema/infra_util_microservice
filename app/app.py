@@ -81,7 +81,7 @@ class FetchSlotsVersionsWithDynamicFilterNone(Resource):
 @api.route("/query_stb_info/<ip>/<slot>")
 class QueryStbInfo(Resource):
     def get(self, ip, slot):
-        return mh.marshal_dict(query_stb_info(ip, slot), 200)
+        return mh.marshal_tuple(query_stb_info(ip, slot), 200, "query_stb_info")
 
 # tested with http://localhost:5000/get_stb_status_broken/10.170.0.199/4
 # library function return a bool False
@@ -109,7 +109,7 @@ class GetBrokenFromRack(Resource):
 @api.route("/query_stb_project_info/<ip>/<slot>")
 class QueryStbProjectInfo(Resource):
     def get(self, ip, slot):
-        return mh.marshal_dict(str(query_stb_project_info(ip, slot)), 200)
+        return mh.marshal_tuple(query_stb_project_info(ip, slot), 200,"query_stb_project_info")
 
 # tested with http://127.0.0.1:5000/get_all_stb
 # library function return a list [<infra_utils.models.infradb_Iaas.InfraDBStbIaas object at 0x72892c7256a0>, \

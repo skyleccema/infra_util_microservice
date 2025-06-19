@@ -67,7 +67,17 @@ class MarshallingHandler:
             'ip': fields.String,
             'sw_ver': fields.String,
             'territory': fields.String,
-            'name': fields.String
+            'server_name': fields.String
+        }
+
+        self.query_stb_project_info_model = {
+            'stb_type': fields.String,
+            'pin': fields.String,
+            'ip': fields.String,
+            'sw_ver': fields.String,
+            'territory': fields.String,
+            'server_name': fields.String,
+            'project': fields.String
         }
 
 
@@ -94,7 +104,7 @@ class MarshallingHandler:
     def marshal_dict(self, func_output: dict, http_code: int, func_name: str=None) -> tuple[object, int]:
         if func_name == "get_rack_slot_by_ip":
             model = self.get_rack_slot_by_ip_model
-            dao = ToupleGetRackSlotByIpDao(func_output)
+            dao = TupleGetRackSlotByIpDao(func_output)
         else:
             model = self.dict_model
             dao = DictDao(func_output)
@@ -114,7 +124,13 @@ class MarshallingHandler:
     def marshal_tuple(self, func_output: tuple, http_code: int, func_name: str=None) -> tuple[object, int]:
         if func_name == "get_rack_slot_by_ip":
             model = self.get_rack_slot_by_ip_model
-            dao = ToupleGetRackSlotByIpDao(func_output)
+            dao = TupleGetRackSlotByIpDao(func_output)
+        elif func_name == "query_stb_info":
+            model = self.query_stb_info_model
+            dao = TupleQueryStbInfoDao(func_output)
+        elif func_name == "query_stb_project_info":
+            model = self.query_stb_project_info_model
+            dao = TupleQueryStbProjectInfoDao(func_output)
         else:
             model = self.dict_model
             dao = DictDao(func_output)
@@ -198,13 +214,26 @@ class HelloDao(object):
         self.status = 'active'
 
 #Per Function specific class
-class ToupleGetRackSlotByIpDao(object):
-    def __init__(self, tuple_rack_slot: tuple):
-        self.rack_ip = tuple_rack_slot[0]
-        self.slot_number = tuple_rack_slot[1]
+#TUPLES
+class TupleGetRackSlotByIpDao(object):
+    def __init__(self, tuple_out: tuple):
+        self.rack_ip = tuple_out[0]
+        self.slot_number = tuple_out[1]
 
 
+class TupleQueryStbInfoDao(object):
+    def __init__(self, tuple_out: tuple):
+        self.stb_type = tuple_out[0]
+        self.pin = tuple_out[1]
+        self.ip = tuple_out[2]
+        self.sw_ver = tuple_out[3]
+        self.territory = tuple_out[4]
+        self.server_name = tuple_out[5]
 
+class TupleQueryStbProjectInfoDao(TupleQueryStbInfoDao):
+    def __init__(self, tuple_out: tuple):
+        super().__init__(tuple_out)
+        self.project = tuple_out[6]
 
 
 
