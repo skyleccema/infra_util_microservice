@@ -80,6 +80,10 @@ class MarshallingHandler:
             'project': fields.String
         }
 
+        self.available_slots_model = {
+            'available_slots': fields.Integer
+        }
+
 
     def hello(self):
         return environ.get("ENV")
@@ -122,6 +126,8 @@ class MarshallingHandler:
         return marshal(data=dao, fields=model), http_code
 
     def marshal_tuple(self, func_output: tuple, http_code: int, func_name: str=None) -> tuple[object, int]:
+        if func_output == {} or func_output is None:
+            raise ValueError(func_output)
         if func_name == "get_rack_slot_by_ip":
             model = self.get_rack_slot_by_ip_model
             dao = TupleGetRackSlotByIpDao(func_output)
@@ -134,8 +140,6 @@ class MarshallingHandler:
         else:
             model = self.dict_model
             dao = DictDao(func_output)
-        if func_output == {} or func_output is None:
-            raise ValueError(func_output)
         # try:
         #     if func_output == {} or func_output is None:
         #         raise ValueError(func_output)
@@ -162,10 +166,16 @@ class MarshallingHandler:
         self.app.logger.info("Str func_output %s", marshal(StrDao(func_output), self.str_model))
         return marshal(data=StrDao(func_output), fields=self.str_model), http_code
 
-    def marshal_int(self, func_output: int, http_code: int, descr: str = None):  # -> tuple[object, int]:
+    def marshal_int(self, func_output: int, http_code: int, func_name: str = None):  # -> tuple[object, int]:
         self.app.logger.info("Int func_output %i\n", func_output)
         if func_output is None:
             http_code = 400
+        if func_name == "available_slots":
+            model = self.available_slots_model
+            dao = IntAvailableSlotsDao(func_output)
+        else:
+            model = self.int_model
+            dao = IntegerDao(func_output)
         # try:
         #     if func_output is None:
         #         raise ValueError(func_output)
@@ -173,7 +183,7 @@ class MarshallingHandler:
         #     func_output = None
         #     http_code = 400
         self.app.logger.info("marshal Int func_output %s\n", str(marshal(IntegerDao(func_output), self.int_model)))
-        return marshal(IntegerDao(func_output), self.int_model), http_code
+        return marshal(dao, model), http_code
 
     def marshal_list(self, func_output: list, http_code: int, func_name: str = None) -> tuple[object, int]:
         self.app.logger.info("List twist and shout func_output %s", str(func_output))
@@ -220,7 +230,6 @@ class TupleGetRackSlotByIpDao(object):
         self.rack_ip = tuple_out[0]
         self.slot_number = tuple_out[1]
 
-
 class TupleQueryStbInfoDao(object):
     def __init__(self, tuple_out: tuple):
         self.stb_type = tuple_out[0]
@@ -235,5 +244,9 @@ class TupleQueryStbProjectInfoDao(TupleQueryStbInfoDao):
         super().__init__(tuple_out)
         self.project = tuple_out[6]
 
+#INTEGER
+class IntAvailableSlotsDao():
+    def __init__(self, func_output: int):
+        self.available_slots = func_output
 
-
+#STRING

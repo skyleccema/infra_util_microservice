@@ -144,7 +144,7 @@ class AvailableSlot(Resource):
         #understand why marshal_int is now working
         # my_type = str(type(available_slots(proj, typ)))
         # return marshal_str(my_type, 200)
-        return mh.marshal_int(available_slots(proj, typ), 200, descr="available slots")
+        return mh.marshal_int(available_slots(proj, typ), 200, "available_slots")
         # return marshal_dict(available_slots(proj, typ), 200, descr="available slots")
 
 # tested with http://127.0.0.1:5000/get_auto_reboot
