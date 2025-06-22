@@ -214,7 +214,7 @@ class FetchRackSlotByProjectAndType(Resource):
 @api.route("/fetch_rack_slot_type_by_project_grouped_by_rack/<proj>")
 class FetchRackSlotTypeByProjectGroupedByRack(Resource):
     def get(self, proj):
-        return mh.marshal_dict(fetch_rack_slot_type_by_project_grouped_by_rack(proj), 200)
+        return mh.marshal_dict(fetch_rack_slot_type_by_project_grouped_by_rack(proj), 200, "fetch_rack_slot_type_by_project_grouped_by_rack")
 
 
 # tested with http://127.0.0.1:5000/fetch_rack_slot_by_project_and_type_grouped_by_rack/CERRI/Llama

@@ -32,9 +32,6 @@ class MarshallingHandler:
         self.int_model = {
             'Integer': fields.Integer(required="True")
         }
-        # self.int_model = self.api.model('IntegerModel',{
-        #     'Integer': fields.Integer(required="True")
-        # }))
 
         ### LIST HANDLER
 
@@ -83,25 +80,26 @@ class MarshallingHandler:
 
         #LIST
         self.list_element_fetch_rack_slot_by_project_and_type_model = self.api.model(
-            'fetch_rack_slot_by_project_and_type element model', {
-                'rack_name': fields.String,
-                'slot': fields.Integer
+            'fetch_rack_slot_by_project_and_type_model element model', {
+                'rack_name': fields.String(required=True, description='The rack name'),
+                'slot': fields.Integer(required=True, description='Slot number')
             }
         )
 
+
+        #DICT
+
+        ### fetch_rack_slot_by_project_and_type_grouped_by_rack
         self.slot_model = {
-            'slot': fields.Integer(required=True, description='The slot field')
+            'slot': fields.Integer(required=True, description='Slot number')
         }
 
         self.list_element_fetch_rack_slot_by_project_and_type_grouped_by_rack_model = self.api.model(
             'fetch_rack_slot_by_project_and_type_grouped_by_rack element model', {
                 'rack_name': fields.String(required=True, description='The rack name'),
-                'devices': fields.List(fields.Nested(self.slot_model))
-                # 'devices': fields.List(fields.Nested(self.slot_model))
-                #fields.Nested(self.list_slot_fetch_rack_slot_by_project_and_type_grouped_by_rack_model)
-                 # 'devices': fields.Raw
+                'devices': fields.List(fields.Nested(self.slot_model), description='slots')
             }
-        )#{'slot': fields.Integer}
+        )
 
         self.dict_fetch_rack_slot_by_project_and_type_grouped_by_rack_model = self.api.model(
             'fetch_rack_slot_by_project_and_type_grouped_by_rack element model', {
@@ -113,43 +111,31 @@ class MarshallingHandler:
                 )
             }
         )
-        # self.dict_fetch_rack_slot_by_project_and_type_grouped_by_rack_model = self.api.model(
-        #     'fetch_rack_slot_by_project_and_type_grouped_by_rack element model', {
-        #         'records': fields.List(
-        #             fields.Nested(
-        #                 self.list_element_fetch_rack_slot_by_project_and_type_grouped_by_rack_model,
-        #                 description="List of racks"
-        #             )
-        #         )
-        #     }
-        # )
 
-        self.grouped_by_rack = self.api.model(
-            'fetch_rack_slot_by_project_and_type_grouped_by_rack rack', {
-                'records': fields.Nested(self.list_element_fetch_rack_slot_by_project_and_type_grouped_by_rack_model, as_list=True)
+        ### fetch_rack_slot_type_by_project_grouped_by_rack
+        self.slot_type_model = self.api.model(
+            "slot and type sub-element model", {
+            'slot': fields.Integer(required=True, description='Slot number'),
+            'device_type': fields.String(required=True, description='Slot number')
+        })
+
+        self.list_element_fetch_rack_slot_type_by_project_grouped_by_rack_model = self.api.model(
+            'fetch_rack_slot_by_project_and_type_grouped_by_rack element model', {
+                'rack_name': fields.String(required=True, description='The rack name'),
+                'devices': fields.List(fields.Nested(self.slot_type_model), description='slots')
             }
         )
 
-        # # fetch_rack_slot_by_project_and_type Model
-        # self.list_fetch_rack_slot_by_project_and_type_model = self.api.model(
-        #     'fetch_rack_slot_by_project_and_type Model',
-        #     self.list_element_fetch_rack_slot_by_project_and_type_model,
-        #     as_list = True
-        # )
-        # RackSlots
-        # self.list_fetch_rack_slot_by_project_and_type_model = self.api.model(
-        #     'fetch_rack_slot_by_project_and_type Model',
-        #     fields.List(
-        #         self.list_element_fetch_rack_slot_by_project_and_type_model
-        #     )
-        # )
-        # self.list_fetch_rack_slot_by_project_and_type_model = self.api.model(
-        #     'fetch_rack_slot_by_project_and_type Model',
-        #     fields.List(
-        #         self.list_element_fetch_rack_slot_by_project_and_type_model
-        #     )
-        # )
-
+        self.dict_fetch_rack_slot_type_by_project_grouped_by_rack_model = self.api.model(
+            'fetch_rack_slot_by_project_and_type_grouped_by_rack element model', {
+                'records': fields.List(
+                    fields.Nested(
+                        self.list_element_fetch_rack_slot_type_by_project_grouped_by_rack_model,
+                        description="List of racks"
+                    )
+                )
+            }
+        )
 
     def hello(self):
         return environ.get("ENV")
@@ -177,7 +163,11 @@ class MarshallingHandler:
         #     dao = TupleGetRackSlotByIpDao(func_output)
         if func_name == "fetch_rack_slot_by_project_and_type_grouped_by_rack":
             model = self.dict_fetch_rack_slot_by_project_and_type_grouped_by_rack_model
-            dao = func_output#GroupedByRackDao(func_output)##ListFetchRackSlotByProjectAndTypeGroupedByRackDao(func_output)
+            dao = func_output
+        elif func_name == "fetch_rack_slot_type_by_project_grouped_by_rack":
+            self.app.logger.info("function output:\t%s", str(func_output))
+            model = self.dict_fetch_rack_slot_type_by_project_grouped_by_rack_model
+            dao = func_output
         else:
             model = self.dict_model
             dao = DictDao(func_output)
@@ -265,13 +255,12 @@ class MarshallingHandler:
         if func_output == () or func_output is None:
             raise ValueError(func_output)
         if func_name == "fetch_rack_slot_by_project_and_type":
-            # model = self.list_element_fetch_rack_slot_by_project_and_type_model#list_element_fetch_rack_slot_by_project_and_type_model
-            model = self.dict_fetch_rack_slot_by_project_and_type_grouped_by_rack_model
-            # model = self.list_fetch_rack_slot_by_project_and_type_model
+            self.app.logger.info("WEEEEEEEEE")
+            model = self.list_element_fetch_rack_slot_by_project_and_type_model
             dao = func_output#ListFetchRackSlotByProjectAndTypeDao(func_output) #func_output
             # dao = ListElementFetchRackSlotByProjectAndTypeDao(func_output)
-            envelope = "Rack and slots"
-        if func_name == "fetch_rack_slot_by_project_and_type_grouped_by_rack":
+            envelope = None
+        elif func_name == "fetch_rack_slot_by_project_and_type_grouped_by_rack":
             self.app.logger.info("function output:\t%s", str(func_output))
             model = self.list_element_fetch_rack_slot_by_project_and_type_grouped_by_rack_model
             dao = func_output#ListFetchRackSlotByProjectAndTypeGroupedByRackDao(func_output)
