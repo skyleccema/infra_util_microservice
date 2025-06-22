@@ -42,15 +42,6 @@ class MarshallingHandler:
             'List': fields.List(cls_or_instance=fields.Raw)
         })
 
-        self.rack_slot_list_frsbpat = self.api.model('fetch_rack_slot_by_project_and_type element model', {
-            'rack_name': fields.String,
-            'slot': fields.Integer
-        })
-
-        # fetch_rack_slot_by_project_and_type Model
-        self.list_frsbpat = self.api.model('fetch_rack_slot_by_project_and_type Model', {
-            'List': fields.List(fields.Nested(self.rack_slot_list_frsbpat))
-        })
 
         # CUSTOM FUNCTION HANDLER
 
@@ -80,9 +71,84 @@ class MarshallingHandler:
             'project': fields.String
         }
 
+        #INTEGER
         self.available_slots_model = {
             'available_slots': fields.Integer
         }
+
+        #STRING
+        self.get_ip_model = {
+            'stb_ip': fields.String
+        }
+
+        #LIST
+        self.list_element_fetch_rack_slot_by_project_and_type_model = self.api.model(
+            'fetch_rack_slot_by_project_and_type element model', {
+                'rack_name': fields.String,
+                'slot': fields.Integer
+            }
+        )
+
+        self.slot_model = {
+            'slot': fields.Integer(required=True, description='The slot field')
+        }
+
+        self.list_element_fetch_rack_slot_by_project_and_type_grouped_by_rack_model = self.api.model(
+            'fetch_rack_slot_by_project_and_type_grouped_by_rack element model', {
+                'rack_name': fields.String(required=True, description='The rack name'),
+                'devices': fields.List(fields.Nested(self.slot_model))
+                # 'devices': fields.List(fields.Nested(self.slot_model))
+                #fields.Nested(self.list_slot_fetch_rack_slot_by_project_and_type_grouped_by_rack_model)
+                 # 'devices': fields.Raw
+            }
+        )#{'slot': fields.Integer}
+
+        self.dict_fetch_rack_slot_by_project_and_type_grouped_by_rack_model = self.api.model(
+            'fetch_rack_slot_by_project_and_type_grouped_by_rack element model', {
+                'records': fields.List(
+                    fields.Nested(
+                        self.list_element_fetch_rack_slot_by_project_and_type_grouped_by_rack_model,
+                        description="List of racks"
+                    )
+                )
+            }
+        )
+        # self.dict_fetch_rack_slot_by_project_and_type_grouped_by_rack_model = self.api.model(
+        #     'fetch_rack_slot_by_project_and_type_grouped_by_rack element model', {
+        #         'records': fields.List(
+        #             fields.Nested(
+        #                 self.list_element_fetch_rack_slot_by_project_and_type_grouped_by_rack_model,
+        #                 description="List of racks"
+        #             )
+        #         )
+        #     }
+        # )
+
+        self.grouped_by_rack = self.api.model(
+            'fetch_rack_slot_by_project_and_type_grouped_by_rack rack', {
+                'records': fields.Nested(self.list_element_fetch_rack_slot_by_project_and_type_grouped_by_rack_model, as_list=True)
+            }
+        )
+
+        # # fetch_rack_slot_by_project_and_type Model
+        # self.list_fetch_rack_slot_by_project_and_type_model = self.api.model(
+        #     'fetch_rack_slot_by_project_and_type Model',
+        #     self.list_element_fetch_rack_slot_by_project_and_type_model,
+        #     as_list = True
+        # )
+        # RackSlots
+        # self.list_fetch_rack_slot_by_project_and_type_model = self.api.model(
+        #     'fetch_rack_slot_by_project_and_type Model',
+        #     fields.List(
+        #         self.list_element_fetch_rack_slot_by_project_and_type_model
+        #     )
+        # )
+        # self.list_fetch_rack_slot_by_project_and_type_model = self.api.model(
+        #     'fetch_rack_slot_by_project_and_type Model',
+        #     fields.List(
+        #         self.list_element_fetch_rack_slot_by_project_and_type_model
+        #     )
+        # )
 
 
     def hello(self):
@@ -106,9 +172,12 @@ class MarshallingHandler:
 
     #marshalling methods
     def marshal_dict(self, func_output: dict, http_code: int, func_name: str=None) -> tuple[object, int]:
-        if func_name == "get_rack_slot_by_ip":
-            model = self.get_rack_slot_by_ip_model
-            dao = TupleGetRackSlotByIpDao(func_output)
+        # if func_name == "get_rack_slot_by_ip":
+        #     model = self.get_rack_slot_by_ip_model
+        #     dao = TupleGetRackSlotByIpDao(func_output)
+        if func_name == "fetch_rack_slot_by_project_and_type_grouped_by_rack":
+            model = self.dict_fetch_rack_slot_by_project_and_type_grouped_by_rack_model
+            dao = func_output#GroupedByRackDao(func_output)##ListFetchRackSlotByProjectAndTypeGroupedByRackDao(func_output)
         else:
             model = self.dict_model
             dao = DictDao(func_output)
@@ -151,10 +220,16 @@ class MarshallingHandler:
         self.app.logger.info(func_name)
         return marshal(data=dao, fields=model), http_code
 
-    def marshal_str(self, func_output: dict, http_code: int) -> tuple[object, int]:
+    def marshal_str(self, func_output: str, http_code: int, func_name: str=None) -> tuple[object, int]:
         self.app.logger.info("Str func_output %s\ntype: %s", func_output, type(func_output))
         if func_output == {} or func_output is None:
             raise ValueError(func_output)
+        if func_name == "get_ip":
+            model = self.get_ip_model
+            dao = StringGetIpDao(func_output)
+        else:
+            model = self.int_model
+            dao = StrDao(func_output)
         # try:
         #     if func_output == "" or func_output is None:
         #         raise ValueError(func_output)
@@ -163,8 +238,8 @@ class MarshallingHandler:
         #     app.logger.error(format_exc())
         #     func_output = None
         #     http_code = 400
-        self.app.logger.info("Str func_output %s", marshal(StrDao(func_output), self.str_model))
-        return marshal(data=StrDao(func_output), fields=self.str_model), http_code
+        self.app.logger.info("Str func_output %s", marshal(data=dao, fields=model))
+        return marshal(data=dao, fields=model), http_code
 
     def marshal_int(self, func_output: int, http_code: int, func_name: str = None):  # -> tuple[object, int]:
         self.app.logger.info("Int func_output %i\n", func_output)
@@ -182,24 +257,38 @@ class MarshallingHandler:
         # except ValueError as e:
         #     func_output = None
         #     http_code = 400
-        self.app.logger.info("marshal Int func_output %s\n", str(marshal(IntegerDao(func_output), self.int_model)))
+        self.app.logger.info("marshal Int func_output %i\n", marshal(dao, model))
         return marshal(dao, model), http_code
 
     def marshal_list(self, func_output: list, http_code: int, func_name: str = None) -> tuple[object, int]:
         self.app.logger.info("List twist and shout func_output %s", str(func_output))
-        list_model = self.generic_list_model
         if func_output == () or func_output is None:
             raise ValueError(func_output)
-        if func_name is not None:
-            list_model = self.list_frsbpat
+        if func_name == "fetch_rack_slot_by_project_and_type":
+            # model = self.list_element_fetch_rack_slot_by_project_and_type_model#list_element_fetch_rack_slot_by_project_and_type_model
+            model = self.dict_fetch_rack_slot_by_project_and_type_grouped_by_rack_model
+            # model = self.list_fetch_rack_slot_by_project_and_type_model
+            dao = func_output#ListFetchRackSlotByProjectAndTypeDao(func_output) #func_output
+            # dao = ListElementFetchRackSlotByProjectAndTypeDao(func_output)
+            envelope = "Rack and slots"
+        if func_name == "fetch_rack_slot_by_project_and_type_grouped_by_rack":
+            self.app.logger.info("function output:\t%s", str(func_output))
+            model = self.list_element_fetch_rack_slot_by_project_and_type_grouped_by_rack_model
+            dao = func_output#ListFetchRackSlotByProjectAndTypeGroupedByRackDao(func_output)
+            envelope = None#"records"
+        else:
+            model = self.generic_list_model
+            dao = ListGenericDao(func_output)
+            envelope = None
         # try:
         #     if func_output == () or func_output is None :
         #         raise ValueError(func_output)
         # except ValueError as e:
         #     func_output = None
         #     http_code = 400
-        self.app.logger.info("Marshalled List func_output %s", str(marshal(ListDao(func_output), list_model)))
-        return marshal(ListDao(func_output), list_model), http_code
+        self.app.logger.info( "Marshalled List func_output %s", marshal(dao, model) )
+        # return marshal(dao, fields.List(model)), http_code
+        return marshal(dao, model, envelope=envelope), http_code
 
 class DictDao(object):
     def __init__(self, dictionary):
@@ -213,7 +302,7 @@ class IntegerDao(object):
     def __init__(self, integer):
         self.Integer = integer
 
-class ListDao(object):
+class ListGenericDao(object):
     def __init__(self, mylist):
         self.List = mylist
 
@@ -245,8 +334,35 @@ class TupleQueryStbProjectInfoDao(TupleQueryStbInfoDao):
         self.project = tuple_out[6]
 
 #INTEGER
-class IntAvailableSlotsDao():
+class IntAvailableSlotsDao(object):
     def __init__(self, func_output: int):
         self.available_slots = func_output
 
 #STRING
+class StringGetIpDao(object):
+    def __init__(self, func_output: str):
+        self.stb_ip = func_output
+
+#LIST
+class ListFetchRackSlotByProjectAndTypeDao(object):
+    def __init__(self, func_output: list[dict]):
+        self.RackSlots = func_output
+
+class ListFetchRackSlotByProjectAndTypeGroupedByRackDao(object):
+    def __init__(self, func_output: list[dict]):
+        self.rack_and_slot = func_output
+
+#DICT
+
+class ListElementFetchRackSlotByProjectAndTypeDao(object):
+    def __init__(self, rack_name: str, slot: int):
+        self.rack_name = rack_name
+        self.slot = slot
+
+class GroupedByRackDao(object):
+    def __init__(self, my_dict: dict):
+        self.records = my_dict
+
+class SlotsDao(object):
+    def __init__(self, slot: int):
+        self.slot = slot

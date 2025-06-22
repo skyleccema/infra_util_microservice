@@ -162,7 +162,7 @@ class GetAutoReboot(Resource):
 class GetIp(Resource):
     def get(self, slot, server, ip):
         # fetch_rack_slot_type_by_project(proj), 200
-        return mh.marshal_str(get_ip(slot,server,ip), 200)
+        return mh.marshal_str(get_ip(slot,server,ip), 200, "get_ip")
 
 
 # tested with http://127.0.0.1:5000/get_stbs_by_project/CERRI
@@ -201,7 +201,7 @@ class FetchRackSlotTypeByProject(Resource):
 @api.route("/fetch_rack_slot_by_project_and_type/<proj>/<typ>")
 class FetchRackSlotByProjectAndType(Resource):
     def get(self, proj, typ):
-        return mh.marshal_list(fetch_rack_slot_by_project_and_type(proj,typ), 200, fetch_rack_slot_by_project_and_type.__name__)
+        return mh.marshal_list(fetch_rack_slot_by_project_and_type(proj,typ), 200, "fetch_rack_slot_by_project_and_type")
 
 # tested with http://127.0.0.1:5000/fetch_rack_slot_type_by_project_grouped_by_rack/PCC but also CERRI
 # library function return a dictionary
@@ -223,9 +223,9 @@ class FetchRackSlotTypeByProjectGroupedByRack(Resource):
 @api.route("/fetch_rack_slot_by_project_and_type_grouped_by_rack/<proj>/<typ>")
 class FetchRackSlotByProjectAndTypeGroupedByRack(Resource):
     def get(self, proj, typ):
-        http_code = 200
-        response = fetch_rack_slot_by_project_and_type_grouped_by_rack(proj,typ)
-        return mh.marshal_dict(response, http_code)
+        return mh.marshal_dict(func_output = fetch_rack_slot_by_project_and_type_grouped_by_rack(proj,typ),
+                               http_code = 200,
+                               func_name = "fetch_rack_slot_by_project_and_type_grouped_by_rack")
 
 if __name__ == "__main__":
     app.run(debug=True)
