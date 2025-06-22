@@ -165,6 +165,7 @@ class GetIp(Resource):
         return mh.marshal_str(get_ip(slot,server,ip), 200, "get_ip")
 
 
+# DONE
 # tested with http://127.0.0.1:5000/get_stbs_by_project/CERRI
 # library function return a list [{'rack_ip': '10.170.1.71', 'slot': 3}, {'rack_ip': '10.170.1.71', 'slot': 8} ...]
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
@@ -172,9 +173,10 @@ class GetIp(Resource):
 class GetStbsByProject(Resource):
     def get(self, proj):
         # fetch_rack_slot_type_by_project(proj), 200
-        return mh.marshal_dict(get_stbs_by_project(proj), 200)
+        return mh.marshal_list(get_stbs_by_project(proj), 200, 'get_stbs_by_project')
 
 
+# DONE
 # tested with http://127.0.0.1:5000/fetch_slots_versions/CERRI
 # library function return a list [{'rack_ip': '10.170.1.71', 'slot': 3, 'version': 'Q310.000.08.00D'}, {'rack_ip': '10.170.1.71', 'slot': 8, 'version': 'Q270.000.09.00D'}, ...]
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
@@ -182,9 +184,10 @@ class GetStbsByProject(Resource):
 class FetchSlotsVersions(Resource):
     def get(self, proj):
         # fetch_rack_slot_type_by_project(proj), 200
-        return mh.marshal_dict(fetch_slots_versions(proj), 200)
+        return mh.marshal_list(fetch_slots_versions(proj), 200, 'fetch_slots_versions')
 
 
+# DONE
 # tested with http://127.0.0.1:5000/fetch_rack_slot_type_by_project/PCC but also CERRI
 # library function return a list [{'rack_name': '4.0 META3', 'slot': 3, 'device_type': 'Falcon'}, ...]
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
@@ -192,9 +195,10 @@ class FetchSlotsVersions(Resource):
 class FetchRackSlotTypeByProject(Resource):
     def get(self, proj):
         # fetch_rack_slot_type_by_project(proj), 200
-        return mh.marshal_dict(fetch_rack_slot_type_by_project(proj), 200)
+        return mh.marshal_list(fetch_rack_slot_type_by_project(proj), 200, "fetch_rack_slot_type_by_project")
 
 
+# DONE
 # tested with http://127.0.0.1:5000/fetch_rack_slot_by_project_and_type/CERRI/Llama
 # library function returns a list [{'rack_name': '4.0 META3', 'slot': 12}, {'rack_name': '4.0 META3', 'slot': 16}]
 # tested with swagger /fetch_rack_slot_by_project_and_type endpoint and proj=PCC, typ=Llama but also CERRI
@@ -203,6 +207,7 @@ class FetchRackSlotByProjectAndType(Resource):
     def get(self, proj, typ):
         return mh.marshal_list(fetch_rack_slot_by_project_and_type(proj,typ), 200, "fetch_rack_slot_by_project_and_type")
 
+# DONE
 # tested with http://127.0.0.1:5000/fetch_rack_slot_type_by_project_grouped_by_rack/PCC but also CERRI
 # library function return a dictionary
 # {'records': [{'rack_name': '4.0 META3', 'devices': [{'slot': 3, 'device_type': 'Falcon'}, \
@@ -217,6 +222,7 @@ class FetchRackSlotTypeByProjectGroupedByRack(Resource):
         return mh.marshal_dict(fetch_rack_slot_type_by_project_grouped_by_rack(proj), 200, "fetch_rack_slot_type_by_project_grouped_by_rack")
 
 
+# DONE
 # tested with http://127.0.0.1:5000/fetch_rack_slot_by_project_and_type_grouped_by_rack/CERRI/Llama
 # library function return a dictionary {'records': [{'rack_name': '4.0 META3', 'devices': [{'slot': 12}, {'slot': 16}]}]}
 # tested with swagger /fetch_rack_slot_by_project_and_type_grouped_by_rack endpoint and proj=PCC, typ=Llama but also CERRI
