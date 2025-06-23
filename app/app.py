@@ -20,8 +20,8 @@ from infra_utils.QueryInfradb import (query_stb_info,
                                       fetch_rack_slot_by_project_and_type_grouped_by_rack)
 from dotenv import load_dotenv
 import logging
-from marshal_models.api_marshalling import MarshallingHandler
-from marshal_models import (DictGenericModel, ListGenericModel,
+from .marshal_models.api_marshalling import MarshallingHandler
+from .marshal_models.generic_models import (DictGenericModel, ListGenericModel,
                             TupleGenericModel, BoolGenericModel,
                             IntGenericModel, StrGenericModel)
 
