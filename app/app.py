@@ -21,7 +21,9 @@ from infra_utils.QueryInfradb import (query_stb_info,
 from dotenv import load_dotenv
 import logging
 from marshal_models.api_marshalling import MarshallingHandler
-from marshal_models import DictGenericModel, ListGenericModel, TupleGenericModel
+from marshal_models import (DictGenericModel, ListGenericModel,
+                            TupleGenericModel, BoolGenericModel,
+                            IntGenericModel, StrGenericModel)
 
 dotenv_path = 'env/.env' # container in /app/ and locally in {HOME}/github_repo
 logfile = "logs/app.log" # container in /app/ and locally in {HOME}/github_repo
@@ -94,7 +96,9 @@ class QueryStbInfo(Resource):
 class GetStbStatusBroken(Resource):
     def get(self, ip, slot):
         app.logger.debug(get_stb_status_broken(ip, slot))
-        return mh.marshal_bool(get_stb_status_broken(ip, slot), 200, "get_stb_status_broken")
+        bool_generic_model = BoolGenericModel(api,app)
+        return bool_generic_model.marshal_bool(get_stb_status_broken(ip, slot), 200, "get_stb_status_broken")
+        # return mh.marshal_bool(get_stb_status_broken(ip, slot), 200, "get_stb_status_broken")
 
 # # @app.route("/update_broken_status/<ip>/<slot>/<broken>")
 # def api_update_broken_status(ip, slot, broken):
@@ -156,8 +160,9 @@ class AvailableSlot(Resource):
         #understand why marshal_int is now working
         # my_type = str(type(available_slots(proj, typ)))
         # return marshal_str(my_type, 200)
-        return mh.marshal_int(available_slots(proj, typ), 200, "available_slots")
-        # return marshal_dict(available_slots(proj, typ), 200, descr="available slots")
+        int_generic_model = IntGenericModel(api, app)
+        return int_generic_model.marshal_int(available_slots(proj, typ), 200, "available_slots")
+        # return int.marshal_int(available_slots(proj, typ), 200, "available_slots")
 
 # DONE
 # tested with http://127.0.0.1:5000/get_auto_reboot
@@ -177,7 +182,9 @@ class GetIp(Resource):
     def get(self, slot, server, ip):
         # fetch_rack_slot_type_by_project(proj), 200
         app.logger.info("get_ip(slot,server,ip) type: %s",type(get_ip(slot,server,ip)))
-        return mh.marshal_str(str(get_ip(slot,server,ip)), 200, "get_ip")
+        str_generic_model = StrGenericModel(api,app)
+        return str_generic_model.marshal_str(get_ip(slot,server,ip), 200, "get_ip")
+        # return mh.marshal_str(str(get_ip(slot,server,ip)), 200, "get_ip")
 
 
 # DONE
