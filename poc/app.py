@@ -1,38 +1,39 @@
 from flask import Flask
-from flask_restx import Api, Resource, fields, marshal
+from flask_restx import Api, Resource, fields
+
 app = Flask(__name__)
 api = Api(app)
-# Step 3: Define Models
-# Model for the inner dictionary
-field_model = api.model('Field', {
-    'name': fields.String(required=True, description='The name field')
+
+# Define the class for the person object
+class Person:
+    def __init__(self, id, name, age):
+        self.id = id
+        self.name = name
+        self.age = age
+
+# Define the fields for a single object
+person_fields = api.model('Person', {
+    'id': fields.Integer,
+    'name': fields.String,
+    'age': fields.Integer,
+    'ref': fields.Raw(attribute=lambda x: str(x))
 })
-# Model for the outer dictionary
-group_model = api.model('Group', {
-    'field1': fields.String(required=True, description='The first field'),
-    'fields2': fields.List(fields.Nested(field_model), description='List of fields2')
+
+# Define the fields for a list of objects
+person_list_fields = api.model('PersonList', {
+    'persons': fields.List(fields.Nested(person_fields))
 })
-# Model for the main structure
-main_model = api.model('Main', {
-    'group': fields.List(fields.Nested(group_model), description='List of groups')
-})
-# Sample data
-data = {
-    "group": [
-        {
-            "field1": "val1",
-            "fields2": [
-                {"name": "value11"},
-                {"name": "value12"}
-            ]
-        }
-    ]
-}
-# Step 4: Create a Resource
-@api.route('/data')
-class DataResource(Resource):
+
+@api.route('/persons')
+class PersonList(Resource):
+    @api.marshal_with(person_list_fields)
     def get(self):
-        # Step 5: Marshal the data
-        return marshal(data, main_model), 200
+        persons = [
+            Person(1, 'John', 30),
+            Person(2, 'Jane', 25),
+            Person(3, 'Bob', 35)
+        ]
+        return {'persons': persons}
+
 if __name__ == '__main__':
     app.run(debug=True)

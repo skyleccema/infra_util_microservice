@@ -1,14 +1,12 @@
 
-from flask import Flask, make_response, abort
-from flask_restx import Resource, Api, fields, marshal
+from flask import Flask
+from flask_restx import Resource, Api
 from flask_cors import CORS
 from infra_utils.QueryInfradb import (query_stb_info,
                                       get_stb_status_broken,
-                                      update_broken_status,
                                       get_broken_from_rack,
                                       query_stb_project_info,
                                       get_all_stb,
-                                      put_stb,
                                       get_rack_slot_by_ip,
                                       available_slots,
                                       get_auto_reboot,
@@ -22,8 +20,8 @@ from infra_utils.QueryInfradb import (query_stb_info,
                                       fetch_rack_slot_by_project_and_type_grouped_by_rack)
 from dotenv import load_dotenv
 import logging
-from api_marshalling import MarshallingHandler
-
+from marshal_models.api_marshalling import MarshallingHandler
+from marshal_models import DictGenericModel, ListGenericModel, TupleGenericModel
 
 dotenv_path = 'env/.env' # container in /app/ and locally in {HOME}/github_repo
 logfile = "logs/app.log" # container in /app/ and locally in {HOME}/github_repo
@@ -82,7 +80,11 @@ class FetchSlotsVersionsWithDynamicFilterNone(Resource):
 @api.route("/query_stb_info/<ip>/<slot>")
 class QueryStbInfo(Resource):
     def get(self, ip, slot):
-        return mh.marshal_tuple(query_stb_info(ip, slot), 200, "query_stb_info")
+        tuple_generic_model = TupleGenericModel(api,app)
+        return tuple_generic_model.marshal_tuple(query_stb_info(ip, slot), 200, "query_stb_info")
+        # app.logger.debug("type of query_stb_info(ip, slot):\t%s",type(query_stb_info(ip, slot)))
+        # app.logger.debug("query_stb_info(ip, slot):\t%s",str(query_stb_info(ip, slot)))
+        # return mh.marshal_tuple(query_stb_info(ip, slot), 200, "query_stb_info")
 
 # DONE as dictionary
 # tested with http://localhost:5000/get_stb_status_broken/10.170.0.199/4
@@ -207,18 +209,22 @@ class FetchSlotsVersions(Resource):
 @api.route("/fetch_rack_slot_type_by_project/<proj>")
 class FetchRackSlotTypeByProject(Resource):
     def get(self, proj):
-        # fetch_rack_slot_type_by_project(proj), 200
+        # DictionaryGenericModel = DictGenericModel(api, app)
+        # return DictionaryGenericModel.marshal_dict(fetch_rack_slot_type_by_project(proj), 200, "fetch_rack_slot_type_by_project")
         return mh.marshal_list(fetch_rack_slot_type_by_project(proj), 200, "fetch_rack_slot_type_by_project")
+        # return mh.marshal_list(fetch_rack_slot_type_by_project(proj), 200, "fetch_rack_slot_type_by_project")
 
 
 # DONE
 # tested with http://127.0.0.1:5000/fetch_rack_slot_by_project_and_type/CERRI/Llama
-# library function returns a list [{'rack_name': '4.0 META3', 'slot': 12}, {'rack_name': '4.0 META3', 'slot': 16}]
+# library function return a list [{'rack_name': '4.0 META3', 'slot': 12}, {'rack_name': '4.0 META3', 'slot': 16}]
 # tested with swagger /fetch_rack_slot_by_project_and_type endpoint and proj=PCC, typ=Llama but also CERRI
 @api.route("/fetch_rack_slot_by_project_and_type/<proj>/<typ>")
 class FetchRackSlotByProjectAndType(Resource):
     def get(self, proj, typ):
-        return mh.marshal_list(fetch_rack_slot_by_project_and_type(proj,typ), 200, "fetch_rack_slot_by_project_and_type")
+        list_generic_model = ListGenericModel(api, app)
+        return list_generic_model.marshal_list(fetch_rack_slot_by_project_and_type(proj,typ), 200, "fetch_rack_slot_by_project_and_type")
+        # return mh.marshal_list(fetch_rack_slot_by_project_and_type(proj,typ), 200, "fetch_rack_slot_by_project_and_type")
 
 # DONE
 # tested with http://127.0.0.1:5000/fetch_rack_slot_type_by_project_grouped_by_rack/PCC but also CERRI

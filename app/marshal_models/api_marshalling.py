@@ -54,13 +54,19 @@ class MarshallingHandler:
         )
 
         self.query_stb_info_model = {
-            'stb_type': fields.String,
-            'pin': fields.String,
-            'ip': fields.String,
-            'sw_ver': fields.String,
-            'territory': fields.String,
-            'server_name': fields.String
+            'tuple': fields.List(fields.Wildcard(fields.String,)),
         }
+
+        # self.query_stb_info_model = {
+        #     'stb_type': fields.String,
+        #     'pin': fields.String,
+        #     'ip': fields.String,
+        #     'sw_ver': fields.String,
+        #     'territory': fields.String,
+        #     'server_name': fields.String
+        # }
+
+
 
         self.query_stb_project_info_model = {
             'stb_type': fields.String,
@@ -127,10 +133,55 @@ class MarshallingHandler:
             }
         )
 
+        self.list_element_get_all_stb_model = self.api.model(
+            'get_all_stb_model element model', {
+                '__bind_key__': fields.String,
+                '__tablename__': fields.String,
+                'stb_id': fields.Integer(required=True, description='SetTopBox ID'),
+                'slot_id': fields.Integer(description='Slot ID'),
+                'smart_card_id': fields.Integer,
+                'account_id': fields.Integer,
+                'country_code': fields.String,
+                'hardware_name': fields.String,
+                'chipId': fields.String,
+                'deviceid': fields.String,
+                'mac_address_br': fields.String,
+                'model_number': fields.String,
+                'receiverId': fields.String,
+                'project': fields.String,
+                'version_number': fields.String,
+                'serial_number': fields.String,
+                'mac_address': fields.String,
+                'ip': fields.String,
+                'personalized_pin': fields.String,
+                'stb_status': fields.Boolean,
+                'auto_rebot': fields.Boolean,
+                'note': fields.String,
+                'used_for': fields.String,
+                'last_as_status': fields.Boolean,
+                'last_as_date': fields.DateTime,
+                'last_modified': fields.DateTime,
+                'stb_status_info': fields.String,
+                'last_as_call': fields.DateTime
+            }
+        )
+
+        self.ref_fields_model = self.api.model(
+            'reference to IAAS stb object', {
+                'ref': fields.List(fields.Raw())
+                # 'ref': fields.Raw(attribute=lambda x: str(x))
+            }
+        )
+
         self.list_get_all_stb_model = self.api.model(
             'get_all_stb list element', {
-                'obj_id_string': fields.List(fields.String(required=True, description="STB object ID string"),
-                                     description="STBs python object ID string")
+                # 'ref': fields.List(fields.Raw(attribute=lambda x: str(x)))#(attribute=lambda x: str(x))
+                # 'ref': fields.List(fields.Nested(self.ref_fields_model))#(attribute=lambda x: str(x))
+                'ref': fields.List(fields.Raw(attribute=lambda x: str(x)))
+                # 'obj_id_string': fields.List(InfraDBStbIaasDao)
+                # 'obj_id_string': fields.List(fields.Nested(self.list_element_get_all_stb_model))
+                # 'obj_id_string': fields.List(fields.String(required=True, description="STB object ID string"),
+                #                              description="STBs python object ID string")
             }
         )
 
@@ -193,6 +244,69 @@ class MarshallingHandler:
             }
         )
 
+        # JSON SCHEMA
+
+        address = self.api.schema_model('Address', {
+            'properties': {
+                'road': {
+                    'type': 'string'
+                },
+            },
+            'type': 'object'
+        })
+
+        person = self.api.schema_model('Person', {
+            'required': ['address'],
+            'properties': {
+                'name': {
+                    'type': 'string'
+                },
+                'age': {
+                    'type': 'integer'
+                },
+                'birthdate': {
+                    'type': 'string',
+                    'format': 'date-time'
+                },
+                'address': {
+                    '$ref': '#/definitions/Address',
+                }
+            },
+            'type': 'object'
+        })
+
+        address = self.api.schema_model('Address', {
+            'properties': {
+                'road': {
+                    'type': 'string'
+                },
+            },
+            'type': 'object'
+        })
+
+        self.query_stb_info_schema = self.api.schema_model('query_stb_info schema', {
+            'required': ['address'],
+            'properties': {
+                "tuple": {
+                    "type": "array",
+                    "items": [{
+                        "type": "string"
+                    }, {
+                        "type": "string"
+                    }, {
+                        "type": "string"
+                    }, {
+                        "type": "string"
+                    }, {
+                        "type": "string"
+                    }, {
+                        "type": "string"
+                    }, ]
+                }
+            },
+            'type': 'object'
+        })
+
     def hello(self):
         return environ.get("ENV")
 
@@ -246,8 +360,9 @@ class MarshallingHandler:
             model = self.get_rack_slot_by_ip_model
             dao = TupleGetRackSlotByIpDao(func_output)
         elif func_name == "query_stb_info":
+            # model = self.query_stb_info_schema
             model = self.query_stb_info_model
-            dao = TupleQueryStbInfoDao(func_output)
+            dao = func_output#TupleQueryStbInfoDao(func_output)
         elif func_name == "query_stb_project_info":
             model = self.query_stb_project_info_model
             dao = TupleQueryStbProjectInfoDao(func_output)
@@ -292,8 +407,12 @@ class MarshallingHandler:
         if func_output == {} or func_output is None:
             raise ValueError(func_output)
         if func_name == "get_stb_status_broken":
-            model = self.get_stb_status_broken_model
-            dao = BoolGetIpDao(func_output)
+            # model = self.get_stb_status_broken_model
+            # dao = BoolGetIpDao(func_output)
+            #return self.app.field.format(func_output), http_code
+            # model = PrimitiveField
+            # dao = func_output
+            return func_output, http_code
         else:
             model = self.int_model
             dao = StrDao(func_output)
@@ -333,9 +452,9 @@ class MarshallingHandler:
         dao = func_output
         if func_output == () or func_output is None:
             raise ValueError(func_output)
-        if func_name == "fetch_rack_slot_type_by_project":
-            self.app.logger.info("marshal_list - dentro if fetch_rack_slot_type_by_project\t%s",func_output)
-            model = self.list_element_fetch_rack_slot_type_by_project_model
+        # if func_name == "fetch_rack_slot_type_by_project":
+        #     self.app.logger.info("marshal_list - dentro if fetch_rack_slot_type_by_project\t%s",func_output)
+        #     model = self.list_element_fetch_rack_slot_type_by_project_model
         elif func_name == "fetch_rack_slot_by_project_and_type":
             self.app.logger.info("WEEEEEEEEE")
             model = self.list_element_fetch_rack_slot_by_project_and_type_model
@@ -353,7 +472,10 @@ class MarshallingHandler:
             model = self.list_get_auto_reboot_model
         elif func_name == "get_all_stb":
             self.app.logger.info("function output:\t%s", str(func_output))
-            model = self.list_get_all_stb_model
+            self.app.logger.info("type of output:\t%s", str(type(func_output[0])))
+            model = self.list_element_get_all_stb_model # self.ref_fields_model#self.list_get_all_stb_model
+            dao = func_output#PtrInfraDBStbIaasDao(func_output)
+            # envelope="stb_list"
         else:
             model = self.generic_list_model
             dao = ListGenericDao(func_output)
@@ -364,8 +486,12 @@ class MarshallingHandler:
         #     func_output = None
         #     http_code = 400
         self.app.logger.info( "Marshalled List func_output %s", marshal(dao, model) )
+        self.app.logger.info( "Marshalled List func_output type %s", type(dao[0]) )
         # return marshal(dao, fields.List(model)), http_code
         return marshal(dao, model, envelope=envelope), http_code
+
+
+
 
 class DictDao(object):
     def __init__(self, dictionary):
@@ -453,40 +579,48 @@ class SlotsDao(object):
 #     def __init__(self, records: dict):
 #         self.records = records
 
-# class InfraDBStbIaasDao():
-#     def __init__(self, stb_id: int, slot_id: int, smart_card_id: int, account_id: int,
-#                  country_code: str, hardware_name: str, chip_id: str, deviceid: str,
-#                  mac_address_br: str, model_number: str, receiver_id: str, project: str,
-#                  version_number: str, serial_number: str, mac_address: str, ip: str,
-#                  personalized_pin: str, stb_status: str, auto_rebot: str, note: str,
-#                  used_for: str, last_as_status: bool, last_as_date: datetime,
-#                  last_modified: datetime, stb_status_info: str, last_as_call: datetime):
-#         super.__init__(self)
-#         self.__bind_key__ = 'infradb'
-#         self.__tablename__ = 'stb_iaas'
-#         self.stb_id = stb_id
-#         self.slot_id = slot_id
-#         self.smart_card_id = smart_card_id
-#         self.account_id = account_id
-#         self.country_code = country_code
-#         self.hardware_name = hardware_name
-#         self.chipId = chip_id
-#         self.deviceid = deviceid
-#         self.mac_address_br = mac_address_br
-#         self.model_number = model_number
-#         self.receiverId = receiver_id
-#         self.project = project
-#         self.version_number = version_number
-#         self.serial_number = serial_number
-#         self.mac_address = mac_address
-#         self.ip = ip
-#         self.personalized_pin = personalized_pin
-#         self.stb_status = stb_status
-#         self.auto_rebot = auto_rebot
-#         self.note = note
-#         self.used_for = used_for
-#         self.last_as_status = last_as_status
-#         self.last_as_date = last_as_date
-#         self.last_modified = last_modified
-#         self.stb_status_info = stb_status_info
-#         self.last_as_call = last_as_call
+class PtrInfraDBStbIaasDao(object):
+    def __init__(self, obj_infra_db_stb_iaas: list[InfraDBStbIaas]):
+        self.obj_infra_db_stb_iaas = obj_infra_db_stb_iaas
+
+
+class InfraDBStbIaasDao(fields.Raw):
+    def __init__(self, my_object: InfraDBStbIaas):
+        super.__init__(super, my_object)
+        self.__bind_key__ = my_object.__bind_key__
+        self.__tablename__ = my_object.__tablename__
+        self.stb_id = my_object.stb_id
+        self.slot_id = my_object.slot_id
+        self.smart_card_id = my_object.smart_card_id
+        self.account_id = my_object.account_id
+        self.country_code = my_object.country_code
+        self.hardware_name = my_object.hardware_name
+        self.chipId = my_object.chipId
+        self.deviceid = my_object.deviceid
+        self.mac_address_br = my_object.mac_address_br
+        self.model_number = my_object.model_number
+        self.receiverId = my_object.receiverId
+        self.project = my_object.project
+        self.version_number = my_object.version_number
+        self.serial_number = my_object.serial_number
+        self.mac_address = my_object.mac_address
+        self.ip = my_object.ip
+        self.personalized_pin = my_object.personalized_pin
+        self.stb_status = my_object.stb_status
+        self.auto_rebot = my_object.auto_rebot
+        self.note = my_object.note
+        self.used_for = my_object.used_for
+        self.last_as_status = my_object.last_as_status
+        self.last_as_date = my_object.last_as_date
+        self.last_modified = my_object.last_modified
+        self.stb_status_info = my_object.stb_status_info
+        self.last_as_call = my_object.last_as_call
+
+class StringOrBooleanOrList(fields.Raw):
+    __schema_type__ = ["string", "array", "boolean"]
+    __schema_example__ = "'hello_word' or ['10.0.1.0/24'] or False"
+
+
+class PrimitiveField(fields.Raw):
+    def format(self, value):
+        return value
