@@ -75,6 +75,7 @@ class FetchSlotsVersionsWithDynamicFilterNone(Resource):
     def get(self, proj):
         return mh.marshal_dict(fetch_slots_versions_with_dinamic_filter(proj, None, None, None, None), 200)
 
+# DONE as dictionary
 # tested with http://localhost:5000/query_stb_info/10.170.0.199/4
 # library function return a tuple ('eu-q-amidala-it', '0000', '10.170.0.210', '6763A3', 'it', 'STHD 07')
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
@@ -83,26 +84,31 @@ class QueryStbInfo(Resource):
     def get(self, ip, slot):
         return mh.marshal_tuple(query_stb_info(ip, slot), 200, "query_stb_info")
 
+# DONE as dictionary
 # tested with http://localhost:5000/get_stb_status_broken/10.170.0.199/4
 # library function return a bool False
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
 @api.route("/get_stb_status_broken/<ip>/<slot>")
 class GetStbStatusBroken(Resource):
     def get(self, ip, slot):
-        return mh.marshal_dict(get_stb_status_broken/(ip, slot), 200)
+        app.logger.debug(get_stb_status_broken(ip, slot))
+        return mh.marshal_bool(get_stb_status_broken(ip, slot), 200, "get_stb_status_broken")
 
 # # @app.route("/update_broken_status/<ip>/<slot>/<broken>")
 # def api_update_broken_status(ip, slot, broken):
 #     update_broken_status(ip, slot, broken)
 
+# DONE (to be tested with IP of a rack with broken devices... by now are None for this IP)
 # tested with http://localhost:5000/get_broken_from_rack/10.41.16.113
 # library function return a dictionary {'rack_ip': '10.41.16.113', 'slots': [13]}
 # tested with swagger /get_broken_from_rack endpoint and ip=10.41.16.113
 @api.route("/get_broken_from_rack/<ip_rack>")
 class GetBrokenFromRack(Resource):
     def get(self, ip_rack):
-        return mh.marshal_dict(get_broken_from_rack/(ip_rack), 200)
+        app.logger.info("get_broken_from_rack(ip_rack) f output:\t%s", str(get_broken_from_rack(ip_rack)))
+        return mh.marshal_dict(get_broken_from_rack(ip_rack), 200, "get_broken_from_rack")
 
+# DONE as dictionary
 # tested with http://localhost:5000/query_stb_info/10.170.0.199/4
 # library function return a tuple ('eu-q-amidala-it', '0000', '10.170.0.210', '6763A3', 'it', 'STHD 07', 'PCC')
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and ip=10.170.0.199 slot=4
@@ -111,6 +117,7 @@ class QueryStbProjectInfo(Resource):
     def get(self, ip, slot):
         return mh.marshal_tuple(query_stb_project_info(ip, slot), 200,"query_stb_project_info")
 
+# TBD
 # tested with http://127.0.0.1:5000/get_all_stb
 # library function return a list [<infra_utils.models.infradb_Iaas.InfraDBStbIaas object at 0x72892c7256a0>, \
 # <infra_utils.models.infradb_Iaas.InfraDBStbIaas object at 0x72892c6c4cd0>, ... ]
@@ -118,7 +125,8 @@ class QueryStbProjectInfo(Resource):
 @api.route("/get_all_stb")
 class GetAllStb(Resource):
     def get(self):
-        return mh.marshal_dict(str(get_all_stb()), 200)
+        return mh.marshal_list(get_all_stb(), 200, "get_all_stb")
+        # return mh.marshal_dict(get_all_stb(), 200, "get_all_stb")
 
 # tested with http://127.0.0.1:5000/put_stb/?
 # ask francesco
@@ -126,6 +134,7 @@ class GetAllStb(Resource):
 # def api_put_stb(stb):
 #     return make_response(put_stb(stb))
 
+# TBD (output should be identical to input)
 # tested with http://127.0.0.1:5000/get_rack_slot_by_ip/10.170.0.177
 # library function return a tuple "10.170.0.167", 3
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
@@ -135,6 +144,7 @@ class GetRackSlotByIp(Resource):
         app.logger.info(type(get_rack_slot_by_ip(ip)))
         return mh.marshal_tuple(get_rack_slot_by_ip(ip), 200, "get_rack_slot_by_ip")
 
+# DONE
 # tested with http://127.0.0.1:5000/available_slots/CERRI/Llama
 # library function return a int 2
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
@@ -147,14 +157,16 @@ class AvailableSlot(Resource):
         return mh.marshal_int(available_slots(proj, typ), 200, "available_slots")
         # return marshal_dict(available_slots(proj, typ), 200, descr="available slots")
 
+# DONE
 # tested with http://127.0.0.1:5000/get_auto_reboot
 # library function return a list [{'slot': 3, 'magiq': '10.170.0.39'}, {'slot': 4, 'magiq': '10.170.0.39'}, ...]
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
 @api.route("/get_auto_reboot")
 class GetAutoReboot(Resource):
     def get(self):
-        return mh.marshal_dict(get_auto_reboot(), 200)
+        return mh.marshal_list(get_auto_reboot(), 200, "get_auto_reboot")
 
+# DONE
 # tested with http://127.0.0.1:5000/get_ip/3/STHD 06/10.170.1.71
 # library function return a string '10.170.0.177'
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
@@ -162,7 +174,8 @@ class GetAutoReboot(Resource):
 class GetIp(Resource):
     def get(self, slot, server, ip):
         # fetch_rack_slot_type_by_project(proj), 200
-        return mh.marshal_str(get_ip(slot,server,ip), 200, "get_ip")
+        app.logger.info("get_ip(slot,server,ip) type: %s",type(get_ip(slot,server,ip)))
+        return mh.marshal_str(str(get_ip(slot,server,ip)), 200, "get_ip")
 
 
 # DONE

@@ -2,6 +2,8 @@ from flask import Flask
 from flask_restx import Api, fields, marshal
 from os import environ
 from traceback import format_exc
+from infra_utils.QueryInfradb import InfraDBStbIaas
+from datetime import datetime
 
 ########## marshal classes ########
 
@@ -44,10 +46,12 @@ class MarshallingHandler:
 
         ### TUPLE return
 
-        self.get_rack_slot_by_ip_model = {
-            'rack_ip': fields.String,
-            'slot_number': fields.Integer
-        }
+        self.get_rack_slot_by_ip_model = self.api.model(
+            "Tuple", {
+                'rack_ip': fields.String,
+                'slot_number': fields.Integer
+            }
+        )
 
         self.query_stb_info_model = {
             'stb_type': fields.String,
@@ -76,6 +80,11 @@ class MarshallingHandler:
         #STRING
         self.get_ip_model = {
             'stb_ip': fields.String
+        }
+
+        #BOOL
+        self.get_stb_status_broken_model = {
+            'broken': fields.Boolean
         }
 
         #LIST
@@ -108,6 +117,20 @@ class MarshallingHandler:
             'get_stbs_by_project element model', {
                 'rack_ip': fields.String(required=True, description='Rack Ip'),
                 'slot': fields.Integer(required=True, description='Slot Number')
+            }
+        )
+
+        self.list_get_auto_reboot_model = self.api.model(
+            'get_auto_reboot element model',{
+                'slot': fields.Integer(required=True, description='Slot Number'),
+                'magiq': fields.String(required=True, description='MagicQ Ip')
+            }
+        )
+
+        self.list_get_all_stb_model = self.api.model(
+            'get_all_stb list element', {
+                'obj_id_string': fields.List(fields.String(required=True, description="STB object ID string"),
+                                     description="STBs python object ID string")
             }
         )
 
@@ -160,6 +183,15 @@ class MarshallingHandler:
                 )
             }
         )
+        self.dict_get_broken_from_rack_model = self.api.model(
+            'get_broken_from_rack dictionary', {
+                'json_broken': fields.Raw
+                # 'rack_ip': fields.String(required=True, description="Rack IP address"),
+                # 'slots': fields.List(InfraDBStbIaas(),
+                #                      description="Slot number")
+                # 'slots': fields.Integer(required=True, description="Rack IP address")
+            }
+        )
 
     def hello(self):
         return environ.get("ENV")
@@ -182,16 +214,15 @@ class MarshallingHandler:
 
     #marshalling methods
     def marshal_dict(self, func_output: dict, http_code: int, func_name: str=None) -> tuple[object, int]:
-        # if func_name == "get_rack_slot_by_ip":
-        #     model = self.get_rack_slot_by_ip_model
-        #     dao = TupleGetRackSlotByIpDao(func_output)
+        dao = func_output
         if func_name == "fetch_rack_slot_by_project_and_type_grouped_by_rack":
             model = self.dict_fetch_rack_slot_by_project_and_type_grouped_by_rack_model
-            dao = func_output
         elif func_name == "fetch_rack_slot_type_by_project_grouped_by_rack":
             self.app.logger.info("function output:\t%s", str(func_output))
             model = self.dict_fetch_rack_slot_type_by_project_grouped_by_rack_model
-            dao = func_output #DictFetchRackSlotTypeByProjectGroupedByRackDao(func_output)
+        elif func_name == "get_broken_from_rack":
+            self.app.logger.info("function output:\t%s", str(func_output))
+            model = self.dict_get_broken_from_rack_model
         else:
             model = self.dict_model
             dao = DictDao(func_output)
@@ -255,6 +286,28 @@ class MarshallingHandler:
         self.app.logger.info("Str func_output %s", marshal(data=dao, fields=model))
         return marshal(data=dao, fields=model), http_code
 
+    def marshal_bool(self, func_output: bool, http_code: int, func_name: str=None) -> tuple[object, int]:
+        self.app.logger.info("Str func_output %s\ntype: %s", func_output, type(func_output))
+        dao = func_output
+        if func_output == {} or func_output is None:
+            raise ValueError(func_output)
+        if func_name == "get_stb_status_broken":
+            model = self.get_stb_status_broken_model
+            dao = BoolGetIpDao(func_output)
+        else:
+            model = self.int_model
+            dao = StrDao(func_output)
+        # try:
+        #     if func_output == "" or func_output is None:
+        #         raise ValueError(func_output)
+        # except ValueError as e:
+        #     app.logger.info(e)
+        #     app.logger.error(format_exc())
+        #     func_output = None
+        #     http_code = 400
+        self.app.logger.info("Str func_output %s", marshal(data=dao, fields=model))
+        return marshal(data=dao, fields=model), http_code
+
     def marshal_int(self, func_output: int, http_code: int, func_name: str = None):  # -> tuple[object, int]:
         self.app.logger.info("Int func_output %i\n", func_output)
         if func_output is None:
@@ -271,7 +324,7 @@ class MarshallingHandler:
         # except ValueError as e:
         #     func_output = None
         #     http_code = 400
-        self.app.logger.info("marshal Int func_output %i\n", marshal(dao, model))
+        self.app.logger.info("marshal Int func_output %i\n", func_output) #marshal(dao, model))
         return marshal(dao, model), http_code
 
     def marshal_list(self, func_output: list, http_code: int, func_name: str = None) -> tuple[object, int]:
@@ -295,6 +348,12 @@ class MarshallingHandler:
         elif func_name == "get_stbs_by_project":
             self.app.logger.info("function output:\t%s", str(func_output))
             model = self.list_get_stbs_by_project_model
+        elif func_name == "get_auto_reboot":
+            self.app.logger.info("function output:\t%s", str(func_output))
+            model = self.list_get_auto_reboot_model
+        elif func_name == "get_all_stb":
+            self.app.logger.info("function output:\t%s", str(func_output))
+            model = self.list_get_all_stb_model
         else:
             model = self.generic_list_model
             dao = ListGenericDao(func_output)
@@ -361,6 +420,11 @@ class StringGetIpDao(object):
     def __init__(self, func_output: str):
         self.stb_ip = func_output
 
+#STRING
+class BoolGetIpDao(object):
+    def __init__(self, func_output: bool):
+        self.broken = func_output
+
 #LIST
 class ListFetchRackSlotByProjectAndTypeDao(object):
     def __init__(self, func_output: list[dict]):
@@ -388,3 +452,41 @@ class SlotsDao(object):
 # class DictFetchRackSlotTypeByProjectGroupedByRackDao(object):
 #     def __init__(self, records: dict):
 #         self.records = records
+
+# class InfraDBStbIaasDao():
+#     def __init__(self, stb_id: int, slot_id: int, smart_card_id: int, account_id: int,
+#                  country_code: str, hardware_name: str, chip_id: str, deviceid: str,
+#                  mac_address_br: str, model_number: str, receiver_id: str, project: str,
+#                  version_number: str, serial_number: str, mac_address: str, ip: str,
+#                  personalized_pin: str, stb_status: str, auto_rebot: str, note: str,
+#                  used_for: str, last_as_status: bool, last_as_date: datetime,
+#                  last_modified: datetime, stb_status_info: str, last_as_call: datetime):
+#         super.__init__(self)
+#         self.__bind_key__ = 'infradb'
+#         self.__tablename__ = 'stb_iaas'
+#         self.stb_id = stb_id
+#         self.slot_id = slot_id
+#         self.smart_card_id = smart_card_id
+#         self.account_id = account_id
+#         self.country_code = country_code
+#         self.hardware_name = hardware_name
+#         self.chipId = chip_id
+#         self.deviceid = deviceid
+#         self.mac_address_br = mac_address_br
+#         self.model_number = model_number
+#         self.receiverId = receiver_id
+#         self.project = project
+#         self.version_number = version_number
+#         self.serial_number = serial_number
+#         self.mac_address = mac_address
+#         self.ip = ip
+#         self.personalized_pin = personalized_pin
+#         self.stb_status = stb_status
+#         self.auto_rebot = auto_rebot
+#         self.note = note
+#         self.used_for = used_for
+#         self.last_as_status = last_as_status
+#         self.last_as_date = last_as_date
+#         self.last_modified = last_modified
+#         self.stb_status_info = stb_status_info
+#         self.last_as_call = last_as_call
