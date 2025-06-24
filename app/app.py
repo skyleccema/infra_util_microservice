@@ -24,7 +24,8 @@ from .marshal_models.api_marshalling import MarshallingHandler
 from .marshal_models.generic_models import (DictGenericModel, ListGenericModel,
                             TupleGenericModel, BoolGenericModel,
                             IntGenericModel, StrGenericModel)
-from .marshal_models import GetStbStatusBrokenModel, AvailableSlotsModel
+from .marshal_models import (GetStbStatusBrokenModel, AvailableSlotsModel,
+                             GetIpModel)
 
 dotenv_path = 'env/.env' # container in /app/ and locally in {HOME}/github_repo
 logfile = "logs/app.log" # container in /app/ and locally in {HOME}/github_repo
@@ -187,8 +188,10 @@ class GetIp(Resource):
     def get(self, slot, server, ip):
         # fetch_rack_slot_type_by_project(proj), 200
         app.logger.info("get_ip(slot,server,ip) type: %s",type(get_ip(slot,server,ip)))
-        str_generic_model = StrGenericModel(api,app)
-        return str_generic_model.marshal_str(get_ip(slot,server,ip), 200, "get_ip")
+        get_ip_model = GetIpModel(api,app)
+        return get_ip_model.marshal_str(str(get_ip(slot,server,ip)), 200)
+        # str_generic_model = StrGenericModel(api,app)
+        # return str_generic_model.marshal_str(get_ip(slot,server,ip), 200, "get_ip")
         # return mh.marshal_str(str(get_ip(slot,server,ip)), 200, "get_ip")
 
 
