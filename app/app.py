@@ -24,6 +24,7 @@ from .marshal_models.api_marshalling import MarshallingHandler
 from .marshal_models.generic_models import (DictGenericModel, ListGenericModel,
                             TupleGenericModel, BoolGenericModel,
                             IntGenericModel, StrGenericModel)
+from .marshal_models import GetStbStatusBrokenModel, AvailableSlotsModel
 
 dotenv_path = 'env/.env' # container in /app/ and locally in {HOME}/github_repo
 logfile = "logs/app.log" # container in /app/ and locally in {HOME}/github_repo
@@ -96,8 +97,10 @@ class QueryStbInfo(Resource):
 class GetStbStatusBroken(Resource):
     def get(self, ip, slot):
         app.logger.debug(get_stb_status_broken(ip, slot))
-        bool_generic_model = BoolGenericModel(api,app)
-        return bool_generic_model.marshal_bool(get_stb_status_broken(ip, slot), 200, "get_stb_status_broken")
+        get_stb_status_broken_model = GetStbStatusBrokenModel(api,app)
+        return get_stb_status_broken_model.marshal_bool(get_stb_status_broken(ip, slot), 200)
+        # bool_generic_model = BoolGenericModel(api,app)
+        # return bool_generic_model.marshal_bool(get_stb_status_broken(ip, slot), 200, "get_stb_status_broken")
         # return mh.marshal_bool(get_stb_status_broken(ip, slot), 200, "get_stb_status_broken")
 
 # # @app.route("/update_broken_status/<ip>/<slot>/<broken>")
@@ -160,9 +163,11 @@ class AvailableSlot(Resource):
         #understand why marshal_int is now working
         # my_type = str(type(available_slots(proj, typ)))
         # return marshal_str(my_type, 200)
-        int_generic_model = IntGenericModel(api, app)
-        return int_generic_model.marshal_int(available_slots(proj, typ), 200, "available_slots")
+        # int_generic_model = IntGenericModel(api, app)
+        # return int_generic_model.marshal_int(available_slots(proj, typ), 200, "available_slots")
         # return int.marshal_int(available_slots(proj, typ), 200, "available_slots")
+        available_slots_model = AvailableSlotsModel(api,app)
+        return available_slots_model.marshal_int(available_slots(proj,typ), 200)
 
 # DONE
 # tested with http://127.0.0.1:5000/get_auto_reboot
