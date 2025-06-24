@@ -1,0 +1,3 @@
+[submodule "infra_utils/v2.0/dist/infra_utils/v2.0/dist/infra_utils_sqlalchemy_2_0-0.0.2"]
+	path = infra_utils/v2.0/dist/infra_utils/v2.0/dist/infra_utils_sqlalchemy_2_0-0.0.2
+	url = http://gitlab.skytech.local/automation-as-a-service/infra_utils.git
