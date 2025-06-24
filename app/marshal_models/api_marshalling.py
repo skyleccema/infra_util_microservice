@@ -452,9 +452,9 @@ class MarshallingHandler:
         dao = func_output
         if func_output == () or func_output is None:
             raise ValueError(func_output)
-        # if func_name == "fetch_rack_slot_type_by_project":
-        #     self.app.logger.info("marshal_list - dentro if fetch_rack_slot_type_by_project\t%s",func_output)
-        #     model = self.list_element_fetch_rack_slot_type_by_project_model
+        if func_name == "fetch_rack_slot_type_by_project":
+            self.app.logger.info("marshal_list - dentro if fetch_rack_slot_type_by_project\t%s",func_output)
+            model = self.list_element_fetch_rack_slot_type_by_project_model
         elif func_name == "fetch_rack_slot_by_project_and_type":
             self.app.logger.info("WEEEEEEEEE")
             model = self.list_element_fetch_rack_slot_by_project_and_type_model
