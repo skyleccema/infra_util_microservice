@@ -447,7 +447,7 @@ class MarshallingHandler:
         return marshal(dao, model), http_code
 
     def marshal_list(self, func_output: list, http_code: int, func_name: str = None) -> tuple[object, int]:
-        self.app.logger.info("marshal_list: func_output %s", str(func_output))
+        # self.app.logger.info("marshal_list: func_output %s", str(func_output))
         envelope = None
         dao = func_output
         if func_output == () or func_output is None:
@@ -471,7 +471,7 @@ class MarshallingHandler:
             self.app.logger.info("function output:\t%s", str(func_output))
             model = self.list_get_auto_reboot_model
         elif func_name == "get_all_stb":
-            self.app.logger.info("function output:\t%s", str(func_output))
+            self.app.logger.info("REPRRR function output:\t%s", func_output)
             self.app.logger.info("type of output:\t%s", str(type(func_output[0])))
             model = self.list_element_get_all_stb_model # self.ref_fields_model#self.list_get_all_stb_model
             dao = func_output#PtrInfraDBStbIaasDao(func_output)

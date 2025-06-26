@@ -1,6 +1,6 @@
 
 from flask import Flask
-from flask_restx import Resource, Api
+from flask_restx import Resource, Api, fields
 from flask_cors import CORS
 from infra_utils.QueryInfradb import (query_stb_info,
                                       get_stb_status_broken,
@@ -22,10 +22,10 @@ from dotenv import load_dotenv
 import logging
 from .marshal_models.api_marshalling import MarshallingHandler
 from .marshal_models.generic_models import (DictGenericModel, ListGenericModel,
-                            TupleGenericModel, BoolGenericModel,
-                            IntGenericModel, StrGenericModel)
+                            TupleGenericModel, BoolGenericModel, GenericGetStbStatusBroken, im,
+                                            IntGenericModel, StrGenericModel)
 from .marshal_models import (GetStbStatusBrokenModel, AvailableSlotsModel,
-                             GetIpModel)
+                             GetIpModel, AvailableSlotsCk)
 
 dotenv_path = 'env/.env' # container in /app/ and locally in {HOME}/github_repo
 logfile = "logs/app.log" # container in /app/ and locally in {HOME}/github_repo
@@ -38,6 +38,8 @@ app = Flask(__name__)
 api = Api(app)
 mh=MarshallingHandler(api, app)
 
+#global models
+# bool_generic_model = BoolGenericModel(api, app)
 
 
 # CORS 
@@ -94,15 +96,35 @@ class QueryStbInfo(Resource):
 # tested with http://localhost:5000/get_stb_status_broken/10.170.0.199/4
 # library function return a bool False
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
-@api.route("/get_stb_status_broken/<ip>/<slot>")
+@api.route("/get_stb_status_broken")
 class GetStbStatusBroken(Resource):
-    def get(self, ip, slot):
-        app.logger.debug(get_stb_status_broken(ip, slot))
-        get_stb_status_broken_model = GetStbStatusBrokenModel(api,app)
-        return get_stb_status_broken_model.marshal_bool(get_stb_status_broken(ip, slot), 200)
-        # bool_generic_model = BoolGenericModel(api,app)
-        # return bool_generic_model.marshal_bool(get_stb_status_broken(ip, slot), 200, "get_stb_status_broken")
+    @api.expect( im( api,"poc_input_im",
+                     {'ip': fields.String, 'slot': fields.Integer} ) )
+    def post(self):
+        validated_input = GenericGetStbStatusBroken(**api.payload)#BoolGeneric(get_stb_status_broken(ip, slot))
+        app.logger.debug("validated_input.ip,validated_input.slot:\t%s\t%i",validated_input.ip,validated_input.slot)
+        # get_stb_status_broken_model = GetStbStatusBrokenModel(api,app)
+        # return get_stb_status_broken_model.marshal_bool(get_stb_status_broken(ip, slot), 200)
+        bool_generic_model = BoolGenericModel(api, app)
+        func_output = get_stb_status_broken(validated_input.ip,validated_input.slot)
+        app.logger.debug(get_stb_status_broken(validated_input.ip,validated_input.slot))
+        return bool_generic_model.marshal_bool(func_output, 200, "get_stb_status_broken")
         # return mh.marshal_bool(get_stb_status_broken(ip, slot), 200, "get_stb_status_broken")
+
+
+# @api.route("/get_stb_status_broken/<ip>/<slot>")
+# class GetStbStatusBroken(Resource):
+#     @api.expect(bool_model)
+#     def get(self, ip, slot):
+#         app.logger.debug(get_stb_status_broken(ip, slot))
+#         # get_stb_status_broken_model = GetStbStatusBrokenModel(api,app)
+#         # return get_stb_status_broken_model.marshal_bool(get_stb_status_broken(ip, slot), 200)
+#         validated_input = BoolGeneric(**api.payload)#BoolGeneric(get_stb_status_broken(ip, slot))
+#         bool_generic_model = BoolGenericModel(api,app)
+#         func_output = get_stb_status_broken(validated_input.ip,validated_input.slot)
+#         return bool_generic_model.marshal_bool(func_output, 200, "get_stb_status_broken")
+#         # return mh.marshal_bool(get_stb_status_broken(ip, slot), 200, "get_stb_status_broken")
+
 
 # # @app.route("/update_broken_status/<ip>/<slot>/<broken>")
 # def api_update_broken_status(ip, slot, broken):
@@ -158,17 +180,28 @@ class GetRackSlotByIp(Resource):
 # tested with http://127.0.0.1:5000/available_slots/CERRI/Llama
 # library function return a int 2
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
-@api.route("/available_slots/<proj>/<typ>")
-class AvailableSlot(Resource):
-    def get(self, proj, typ):
+# @api.route("/available_slots/<proj>/<typ>")
+@api.route("/available_slots")
+class AvailableSlots(Resource):
+    @api.expect(im(api,'available slot schema',
+                {'proj': fields.String, 'typ': fields.String}))
+    def post(self):
         #understand why marshal_int is now working
         # my_type = str(type(available_slots(proj, typ)))
         # return marshal_str(my_type, 200)
         # int_generic_model = IntGenericModel(api, app)
         # return int_generic_model.marshal_int(available_slots(proj, typ), 200, "available_slots")
         # return int.marshal_int(available_slots(proj, typ), 200, "available_slots")
+        validated_input = AvailableSlotsCk(**api.payload)
+        app.logger.debug('validated_inputs\t%s\t%s',validated_input.proj, validated_input.typ)
         available_slots_model = AvailableSlotsModel(api,app)
-        return available_slots_model.marshal_int(available_slots(proj,typ), 200)
+        return available_slots_model.marshal_int(
+            available_slots(validated_input.proj, validated_input.typ),
+            200
+        )
+        #OLD WORKING
+        # available_slots_model = AvailableSlotsModel(api,app)
+        # return available_slots_model.marshal_int(available_slots(proj,typ), 200)
 
 # DONE
 # tested with http://127.0.0.1:5000/get_auto_reboot

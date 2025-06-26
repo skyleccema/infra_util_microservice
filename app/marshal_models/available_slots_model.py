@@ -1,5 +1,13 @@
 from flask_restx import Api, fields, marshal
 from flask import Flask
+from dataclasses import dataclass
+
+@dataclass
+class AvailableSlotsCk:
+    proj: fields.String
+    typ: fields.String
+
+#OLD
 class AvailableSlotsModel:
     def __init__(self, api: Api, app: Flask):
         self.app = app
