@@ -25,7 +25,7 @@ from .marshal_models.generic_models import (DictGenericModel, ListGenericModel,
                             TupleGenericModel, BoolGenericModel, GenericGetStbStatusBroken, im,
                                             IntGenericModel, StrGenericModel)
 from .marshal_models import (GetStbStatusBrokenModel, AvailableSlotsModel,
-                             GetIpModel, AvailableSlotsCk)
+                             GetIpModel, AvailableSlotsIn, GetStbStatusBrokenIn, GetStbStatusBrokenModel)
 
 dotenv_path = 'env/.env' # container in /app/ and locally in {HOME}/github_repo
 logfile = "logs/app.log" # container in /app/ and locally in {HOME}/github_repo
@@ -101,14 +101,14 @@ class GetStbStatusBroken(Resource):
     @api.expect( im( api,"poc_input_im",
                      {'ip': fields.String, 'slot': fields.Integer} ) )
     def post(self):
-        validated_input = GenericGetStbStatusBroken(**api.payload)#BoolGeneric(get_stb_status_broken(ip, slot))
+        validated_input = GetStbStatusBrokenIn(**api.payload)#BoolGeneric(get_stb_status_broken(ip, slot))
         app.logger.debug("validated_input.ip,validated_input.slot:\t%s\t%i",validated_input.ip,validated_input.slot)
         # get_stb_status_broken_model = GetStbStatusBrokenModel(api,app)
         # return get_stb_status_broken_model.marshal_bool(get_stb_status_broken(ip, slot), 200)
-        bool_generic_model = BoolGenericModel(api, app)
+        bool_generic_model = GetStbStatusBrokenModel(api, app)
         func_output = get_stb_status_broken(validated_input.ip,validated_input.slot)
         app.logger.debug(get_stb_status_broken(validated_input.ip,validated_input.slot))
-        return bool_generic_model.marshal_bool(func_output, 200, "get_stb_status_broken")
+        return bool_generic_model.marshal_bool(func_output, 200)
         # return mh.marshal_bool(get_stb_status_broken(ip, slot), 200, "get_stb_status_broken")
 
 
@@ -192,7 +192,7 @@ class AvailableSlots(Resource):
         # int_generic_model = IntGenericModel(api, app)
         # return int_generic_model.marshal_int(available_slots(proj, typ), 200, "available_slots")
         # return int.marshal_int(available_slots(proj, typ), 200, "available_slots")
-        validated_input = AvailableSlotsCk(**api.payload)
+        validated_input = AvailableSlotsIn(**api.payload)
         app.logger.debug('validated_inputs\t%s\t%s',validated_input.proj, validated_input.typ)
         available_slots_model = AvailableSlotsModel(api,app)
         return available_slots_model.marshal_int(

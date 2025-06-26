@@ -3,7 +3,7 @@ from flask import Flask
 from dataclasses import dataclass
 
 @dataclass
-class AvailableSlotsCk:
+class AvailableSlotsIn:
     proj: fields.String
     typ: fields.String
 

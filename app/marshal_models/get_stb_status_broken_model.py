@@ -1,5 +1,12 @@
 from flask_restx import Api, fields, marshal
 from flask import Flask
+from dataclasses import dataclass
+
+@dataclass
+class GetStbStatusBrokenIn:
+    ip: fields.String
+    slot: fields.Integer
+
 class GetStbStatusBrokenModel:
     def __init__(self, api: Api, app: Flask):
         self.app = app
