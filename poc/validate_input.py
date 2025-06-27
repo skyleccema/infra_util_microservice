@@ -64,9 +64,4 @@ api = Api(app)
 api.add_resource(UserRegistrationResource, '/register')
 
 if __name__ == '__main__':
-    try:
-        print('hi guyzzzz',file=sys.stderr)
-        app.run(debug=True)
-    except ValueError as e:
-        print('Error, bye guyzzzz')
-        app.logger.error(e,)
+    app.run(debug=True)
