@@ -1,5 +1,14 @@
 from flask_restx import Api, fields, marshal
 from flask import Flask
+
+from dataclasses import dataclass
+
+@dataclass
+class GetIpIn:
+    slot: fields.Integer
+    server: fields.String
+    ip: fields.String
+
 class GetIpModel:
     def __init__(self, api: Api, app: Flask):
         self.app = app

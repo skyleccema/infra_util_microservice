@@ -1,6 +1,6 @@
 
 from flask import Flask
-from flask_restx import Resource, Api, fields
+from flask_restx import Resource, Api, fields, ValidationError
 from flask_cors import CORS
 from infra_utils.QueryInfradb import (query_stb_info,
                                       get_stb_status_broken,
@@ -21,11 +21,13 @@ from infra_utils.QueryInfradb import (query_stb_info,
 from dotenv import load_dotenv
 import logging
 from .marshal_models.api_marshalling import MarshallingHandler
-from .marshal_models.generic_models import (DictGenericModel, ListGenericModel,
-                            TupleGenericModel, BoolGenericModel, GenericGetStbStatusBroken, im,
-                                            IntGenericModel, StrGenericModel)
-from .marshal_models import (GetStbStatusBrokenModel, AvailableSlotsModel,
-                             GetIpModel, AvailableSlotsIn, GetStbStatusBrokenIn, GetStbStatusBrokenModel)
+from .marshal_models.generic_models import (ListGenericModel,
+                                            im)
+from .marshal_models import (AvailableSlotsModel, AvailableSlotsIn,
+                             GetIpModel, GetIpIn,
+                             GetStbStatusBrokenModel, GetStbStatusBrokenIn)
+# TMP IMPORTS
+from app.validation_schema.schema import QueryStbInfoSchemaIn, QueryStbInfoDTOOut
 
 dotenv_path = 'env/.env' # container in /app/ and locally in {HOME}/github_repo
 logfile = "logs/app.log" # container in /app/ and locally in {HOME}/github_repo
@@ -38,9 +40,7 @@ app = Flask(__name__)
 api = Api(app)
 mh=MarshallingHandler(api, app)
 
-#global models
-# bool_generic_model = BoolGenericModel(api, app)
-
+# TMP: validation classes
 
 # CORS 
 CORS(app)
@@ -83,14 +83,51 @@ class FetchSlotsVersionsWithDynamicFilterNone(Resource):
 # tested with http://localhost:5000/query_stb_info/10.170.0.199/4
 # library function return a tuple ('eu-q-amidala-it', '0000', '10.170.0.210', '6763A3', 'it', 'STHD 07')
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
-@api.route("/query_stb_info/<ip>/<slot>")
+@api.route("/query_stb_info")
 class QueryStbInfo(Resource):
-    def get(self, ip, slot):
-        tuple_generic_model = TupleGenericModel(api,app)
-        return tuple_generic_model.marshal_tuple(query_stb_info(ip, slot), 200, "query_stb_info")
-        # app.logger.debug("type of query_stb_info(ip, slot):\t%s",type(query_stb_info(ip, slot)))
-        # app.logger.debug("query_stb_info(ip, slot):\t%s",str(query_stb_info(ip, slot)))
-        # return mh.marshal_tuple(query_stb_info(ip, slot), 200, "query_stb_info")
+    def __init__(self, *args, **kwargs):
+        self.schema = QueryStbInfoSchemaIn()
+        self.out_schema = QueryStbInfoDTOOut()
+        super().__init__(*args, kwargs)
+
+    @api.expect(im(api, 'query_stb_info input model',
+                {'ip': fields.String, 'slot': fields.Integer}))
+    def post(self):
+        # catching validation error
+        try:
+            data = self.schema.load(api.payload)
+            app.logger.debug("data['ip'], data['slot']:\t%s\t%i", data['ip'], data['slot'])
+            app.logger.debug("types:\t%s\t%s", type(data['ip']), type(data['slot']))
+            app.logger.debug("query_stb_info(str(data['ip']),data['slot']): \t%s", str(query_stb_info(data['ip'],data['slot'])))
+            app.logger.debug("type:\t%s", type(query_stb_info(str(data['ip']),data['slot'])))
+            my_model = self.out_schema.load(query_stb_info(data['ip'],data['slot'])[0])
+            app.logger.debug("my_model:\t%s", str(my_model))
+            return my_model, 200
+            #return "hello", 200
+            # validated_input = QueryStbInfoIn(**api.payload)  # BoolGeneric(get_stb_status_broken(ip, slot))
+            # app.logger.debug("validated_inputs:\t%s\t%i", validated_input.ip, validated_input.slot)
+            # tuple_generic_model = QueryStbInfoModel(api,app)
+            # return tuple_generic_model.marshal_tuple(
+            #     query_stb_info(validated_input.ip, validated_input.slot),
+            #     200, "query_stb_info")
+            # app.logger.debug("type of query_stb_info(ip, slot):\t%s",type(query_stb_info(ip, slot)))
+            # app.logger.debug("query_stb_info(ip, slot):\t%s",str(query_stb_info(ip, slot)))
+            # return mh.marshal_tuple(query_stb_info(ip, slot), 200, "query_stb_info")
+        except ValidationError as err:
+            # returning validation error
+            return {
+                'message': 'Validation Error',
+                'errors': err.msg
+            }, 400
+
+#OLD maybe not working
+# @api.route("/query_stb_info/<ip>/<slot>")
+# class QueryStbInfo(Resource):
+#     def get(self, ip, slot):
+#         tuple_generic_model = TupleGenericModel(api,app)
+#         return tuple_generic_model.marshal_tuple(query_stb_info(ip, slot), 200, "query_stb_info")
+
+
 
 # DONE as dictionary
 # tested with http://localhost:5000/get_stb_status_broken/10.170.0.199/4
@@ -216,13 +253,36 @@ class GetAutoReboot(Resource):
 # tested with http://127.0.0.1:5000/get_ip/3/STHD 06/10.170.1.71
 # library function return a string '10.170.0.177'
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
-@api.route("/get_ip/<slot>/<server>/<ip>")
+@api.route("/get_ip")
 class GetIp(Resource):
-    def get(self, slot, server, ip):
+    @api.expect(im(api, 'get_ip input model',
+                   {'slot': fields.Integer,
+                    'server': fields.String, 'ip': fields.String}))
+    def post(self):
         # fetch_rack_slot_type_by_project(proj), 200
-        app.logger.info("get_ip(slot,server,ip) type: %s",type(get_ip(slot,server,ip)))
+        validated_input = GetIpIn(**api.payload)
+        app.logger.debug('validated_inputs\t%i\t%s\t%s',validated_input.slot,
+                         validated_input.server, validated_input.ip)
+        app.logger.info("get_ip(slot,server,ip) type: %s",
+                        type(get_ip(validated_input.slot,validated_input.server,
+                                    validated_input.ip)) )
         get_ip_model = GetIpModel(api,app)
-        return get_ip_model.marshal_str(str(get_ip(slot,server,ip)), 200)
+        return get_ip_model.marshal_str(
+            get_ip(
+                validated_input.slot,
+                validated_input.server,
+                validated_input.ip),
+            200
+        )
+#OLD WORKING
+# @api.route("/get_ip/<slot>/<server>/<ip>")
+# class GetIp(Resource):
+#     def get(self, slot, server, ip):
+#         # fetch_rack_slot_type_by_project(proj), 200
+#         app.logger.info("get_ip(slot,server,ip) type: %s", type(get_ip(slot, server, ip)))
+#         get_ip_model = GetIpModel(api, app)
+#         return get_ip_model.marshal_str(str(get_ip(slot, server, ip)), 200)
+
         # str_generic_model = StrGenericModel(api,app)
         # return str_generic_model.marshal_str(get_ip(slot,server,ip), 200, "get_ip")
         # return mh.marshal_str(str(get_ip(slot,server,ip)), 200, "get_ip")
@@ -232,11 +292,21 @@ class GetIp(Resource):
 # tested with http://127.0.0.1:5000/get_stbs_by_project/CERRI
 # library function return a list [{'rack_ip': '10.170.1.71', 'slot': 3}, {'rack_ip': '10.170.1.71', 'slot': 8} ...]
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
-@api.route("/get_stbs_by_project/<proj>")
+@api.route("/get_stbs_by_project")
 class GetStbsByProject(Resource):
-    def get(self, proj):
+    @api.expect(im(api, 'ciccio',
+                   {
+                       'proj': fields.String
+                   }))
+    def post(self):
+        data = api.payload['proj']
         # fetch_rack_slot_type_by_project(proj), 200
-        return mh.marshal_list(get_stbs_by_project(proj), 200, 'get_stbs_by_project')
+        return mh.marshal_list(get_stbs_by_project(data), 200, 'get_stbs_by_project')
+# @api.route("/get_stbs_by_project/<proj>")
+# class GetStbsByProject(Resource):
+#     def get(self, proj):
+#         # fetch_rack_slot_type_by_project(proj), 200
+#         return mh.marshal_list(get_stbs_by_project(proj), 200, 'get_stbs_by_project')
 
 
 # DONE

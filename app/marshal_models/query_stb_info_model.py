@@ -1,12 +1,27 @@
 from flask_restx import Api, fields, marshal
 from flask import Flask
+from dataclasses import dataclass
+
+@dataclass
+class QueryStbInfoIn:
+    ip: fields.String
+    slot: fields.Integer
+
 class QueryStbInfoModel:
     def __init__(self, api: Api, app: Flask):
         self.app = app
         self.api = api
 
+        # self.query_stb_info_model = {
+        #     'tuple': fields.List(fields.String)
+        # }
         self.query_stb_info_model = {
-            'tuple': fields.List(fields.String)
+            'stb_type': fields.String,
+            'pin': fields.String,
+            'ip': fields.String,
+            'sw_ver': fields.String,
+            'territory': fields.String,
+            'server_name': fields.String,
         }
 
     def marshal_tuple(self, func_output: tuple, http_code: int, func_name: str=None) -> tuple[object, int]:

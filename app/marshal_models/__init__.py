@@ -4,4 +4,5 @@ from .generic_models import (DictGenericModel, ListGenericModel,
                             IntGenericModel, StrGenericModel, GenericGetStbStatusBroken)
 from .get_stb_status_broken_model import GetStbStatusBrokenModel, GetStbStatusBrokenModel, GetStbStatusBrokenIn
 from .available_slots_model import AvailableSlotsModel, AvailableSlotsIn
-from .get_ip_model import GetIpModel
+from .get_ip_model import GetIpModel, GetIpIn
+from .query_stb_info_model import QueryStbInfoIn, QueryStbInfoModel
