@@ -16,12 +16,13 @@ class QueryStbInfoModel:
         #     'tuple': fields.List(fields.String)
         # }
         self.query_stb_info_model = {
-            'stb_type': fields.String,
-            'pin': fields.String,
-            'ip': fields.String,
-            'sw_ver': fields.String,
-            'territory': fields.String,
-            'server_name': fields.String,
+            'tuple_out': fields.List(fields.String)
+            # 'stb_type': fields.String,
+            # 'pin': fields.String,
+            # 'ip': fields.String,
+            # 'sw_ver': fields.String,
+            # 'territory': fields.String,
+            # 'server_name': fields.String,
         }
 
     def marshal_tuple(self, func_output: tuple, http_code: int, func_name: str=None) -> tuple[object, int]:
@@ -42,10 +43,11 @@ class QueryStbInfoModel:
 
 class TupleQueryStbInfoDao(object):
     def __init__(self, tuple_out: tuple):
-        self.stb_type = tuple_out[0]
-        self.pin = tuple_out[1]
-        self.ip = tuple_out[2]
-        self.sw_ver = tuple_out[3]
-        self.territory = tuple_out[4]
-        self.server_name = tuple_out[5]
+        self.tuple_out = tuple_out
+        # self.stb_type = tuple_out[0]
+        # self.pin = tuple_out[1]
+        # self.ip = tuple_out[2]
+        # self.sw_ver = tuple_out[3]
+        # self.territory = tuple_out[4]
+        # self.server_name = tuple_out[5]
 

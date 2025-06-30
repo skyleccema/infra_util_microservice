@@ -1,6 +1,7 @@
+import json
 
 from flask import Flask
-from flask_restx import Resource, Api, fields, ValidationError
+from flask_restx import Resource, Api, fields, ValidationError, marshal
 from flask_cors import CORS
 from infra_utils.QueryInfradb import (query_stb_info,
                                       get_stb_status_broken,
@@ -27,7 +28,7 @@ from .marshal_models import (AvailableSlotsModel, AvailableSlotsIn,
                              GetIpModel, GetIpIn,
                              GetStbStatusBrokenModel, GetStbStatusBrokenIn)
 # TMP IMPORTS
-from app.validation_schema.schema import QueryStbInfoSchemaIn, QueryStbInfoDTOOut
+from app.validation_schema.schema import QueryStbInfoSchemaIn, QueryStbInfoDTOOut, QueryStbInfoOut
 
 dotenv_path = 'env/.env' # container in /app/ and locally in {HOME}/github_repo
 logfile = "logs/app.log" # container in /app/ and locally in {HOME}/github_repo
@@ -88,6 +89,13 @@ class QueryStbInfo(Resource):
     def __init__(self, *args, **kwargs):
         self.schema = QueryStbInfoSchemaIn()
         self.out_schema = QueryStbInfoDTOOut()
+        self.out_model = im(api, "out_model query_stb_info",
+                            {'stb_type': fields.String,
+                             'pin': fields.String,
+                            'ip': fields.String,
+                            'sw_ver': fields.String,
+                            'territory': fields.String,
+                            'server_name': fields.String})
         super().__init__(*args, kwargs)
 
     @api.expect(im(api, 'query_stb_info input model',
@@ -95,14 +103,18 @@ class QueryStbInfo(Resource):
     def post(self):
         # catching validation error
         try:
+            app.logger.debug(api.payload)
             data = self.schema.load(api.payload)
             app.logger.debug("data['ip'], data['slot']:\t%s\t%i", data['ip'], data['slot'])
             app.logger.debug("types:\t%s\t%s", type(data['ip']), type(data['slot']))
             app.logger.debug("query_stb_info(str(data['ip']),data['slot']): \t%s", str(query_stb_info(data['ip'],data['slot'])))
-            app.logger.debug("type:\t%s", type(query_stb_info(str(data['ip']),data['slot'])))
-            my_model = self.out_schema.load(query_stb_info(data['ip'],data['slot'])[0])
-            app.logger.debug("my_model:\t%s", str(my_model))
-            return my_model, 200
+            app.logger.debug("type:\t%s", type(query_stb_info(data['ip'],data['slot'])))
+            my_dto = self.out_schema.load(query_stb_info(data['ip'],data['slot']))
+            app.logger.debug("my_model:\t%s", str(my_dto))
+            #QueryStbInfoOut
+            return marshal(my_dto, self.out_model), 200
+            # return marshal(my_dto, QueryStbInfoOut), 200
+            # return my_model, 200
             #return "hello", 200
             # validated_input = QueryStbInfoIn(**api.payload)  # BoolGeneric(get_stb_status_broken(ip, slot))
             # app.logger.debug("validated_inputs:\t%s\t%i", validated_input.ip, validated_input.slot)
