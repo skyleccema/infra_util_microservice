@@ -14,7 +14,7 @@ class QueryStbInfoSchemaIn(Schema):
     )
     slot = ma_fields.Integer(
         required=True,
-        validate=validate.Range(min=1, max=16)#lambda x: slot_range_validator(x)#x>100#lambda x:QueryStbInfoSchema.validate_slot(x)#lambda x: x>100#validate.ValidationError('Slot must be < 3... awwwww',)
+        validate=lambda x: slot_range_validator(x)#validate.Range(min=1, max=16)#x>100#lambda x:QueryStbInfoSchema.validate_slot(x)#lambda x: x>100#validate.ValidationError('Slot must be < 3... awwwww',)
     )
 
 @dataclass
