@@ -28,7 +28,8 @@ from .marshal_models import (AvailableSlotsModel, AvailableSlotsIn,
                              GetIpModel, GetIpIn,
                              GetStbStatusBrokenModel, GetStbStatusBrokenIn)
 # TMP IMPORTS
-from app.validation_schema.schema import QueryStbInfoSchemaIn, QueryStbInfoDTOOut, QueryStbInfoOut
+from .validation_schema.query_stb_info_schema import QueryStbInfoSchemaIn
+from .marshal_models.query_stb_info_model import QueryStbInfoDTOOut
 
 dotenv_path = 'env/.env' # container in /app/ and locally in {HOME}/github_repo
 logfile = "logs/app.log" # container in /app/ and locally in {HOME}/github_repo
@@ -83,7 +84,7 @@ class FetchSlotsVersionsWithDynamicFilterNone(Resource):
 # DONE as dictionary
 # tested with http://localhost:5000/query_stb_info/10.170.0.199/4
 # library function return a tuple ('eu-q-amidala-it', '0000', '10.170.0.210', '6763A3', 'it', 'STHD 07')
-# tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
+# tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=10.170.0.199 and slot 4
 @api.route("/query_stb_info")
 class QueryStbInfo(Resource):
     def __init__(self, *args, **kwargs):
@@ -103,43 +104,27 @@ class QueryStbInfo(Resource):
     def post(self):
         # catching validation error
         try:
+            # parse and validate input
             app.logger.debug(api.payload)
+            app.logger.debug("my_model_in:\t%s", im(api, 'query_stb_info input model',
+                {'ip': fields.String, 'slot': fields.Integer}))
             data = self.schema.load(api.payload)
+            # output DTO model creation
             app.logger.debug("data['ip'], data['slot']:\t%s\t%i", data['ip'], data['slot'])
             app.logger.debug("types:\t%s\t%s", type(data['ip']), type(data['slot']))
             app.logger.debug("query_stb_info(str(data['ip']),data['slot']): \t%s", str(query_stb_info(data['ip'],data['slot'])))
             app.logger.debug("type:\t%s", type(query_stb_info(data['ip'],data['slot'])))
             my_dto = self.out_schema.load(query_stb_info(data['ip'],data['slot']))
-            app.logger.debug("my_model:\t%s", str(my_dto))
-            #QueryStbInfoOut
+            app.logger.debug("my_dto:\t%s", str(my_dto))
+            app.logger.debug("my_model_out:\t%s", str(self.out_model))
+            # return marshalling of dto with output model
             return marshal(my_dto, self.out_model), 200
-            # return marshal(my_dto, QueryStbInfoOut), 200
-            # return my_model, 200
-            #return "hello", 200
-            # validated_input = QueryStbInfoIn(**api.payload)  # BoolGeneric(get_stb_status_broken(ip, slot))
-            # app.logger.debug("validated_inputs:\t%s\t%i", validated_input.ip, validated_input.slot)
-            # tuple_generic_model = QueryStbInfoModel(api,app)
-            # return tuple_generic_model.marshal_tuple(
-            #     query_stb_info(validated_input.ip, validated_input.slot),
-            #     200, "query_stb_info")
-            # app.logger.debug("type of query_stb_info(ip, slot):\t%s",type(query_stb_info(ip, slot)))
-            # app.logger.debug("query_stb_info(ip, slot):\t%s",str(query_stb_info(ip, slot)))
-            # return mh.marshal_tuple(query_stb_info(ip, slot), 200, "query_stb_info")
         except ValidationError as err:
             # returning validation error
             return {
                 'message': 'Validation Error',
                 'errors': err.msg
             }, 400
-
-#OLD maybe not working
-# @api.route("/query_stb_info/<ip>/<slot>")
-# class QueryStbInfo(Resource):
-#     def get(self, ip, slot):
-#         tuple_generic_model = TupleGenericModel(api,app)
-#         return tuple_generic_model.marshal_tuple(query_stb_info(ip, slot), 200, "query_stb_info")
-
-
 
 # DONE as dictionary
 # tested with http://localhost:5000/get_stb_status_broken/10.170.0.199/4

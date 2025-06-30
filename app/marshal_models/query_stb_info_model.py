@@ -1,53 +1,39 @@
-from flask_restx import Api, fields, marshal
-from flask import Flask
+#/query_stb_info
+from marshmallow import fields as ma_fields, Schema, validate, post_load, pre_load
 from dataclasses import dataclass
+from ..validation_schema.utils import ip_length_validator
+
 
 @dataclass
-class QueryStbInfoIn:
-    ip: fields.String
-    slot: fields.Integer
+class QueryStbInfoOut:
+    # tuple_out: ma_fields.String
+    stb_type: ma_fields.String
+    pin: ma_fields.String
+    ip: ma_fields.String
+    sw_ver: ma_fields.String
+    territory: ma_fields.String
+    server_name: ma_fields.String
 
-class QueryStbInfoModel:
-    def __init__(self, api: Api, app: Flask):
-        self.app = app
-        self.api = api
+class QueryStbInfoDTOOut(Schema):
+    # tuple_out = ma_fields.List(ma_fields.String,required=True)
+    stb_type = ma_fields.String(required=True)
+    pin = ma_fields.String(required=True)
+    ip = ma_fields.String(required=True, validate=lambda x:ip_length_validator(x))
+    sw_ver = ma_fields.String(required=True)
+    territory = ma_fields.String(required=True)
+    server_name = ma_fields.String(required=True)
 
-        # self.query_stb_info_model = {
-        #     'tuple': fields.List(fields.String)
-        # }
-        self.query_stb_info_model = {
-            'tuple_out': fields.List(fields.String)
-            # 'stb_type': fields.String,
-            # 'pin': fields.String,
-            # 'ip': fields.String,
-            # 'sw_ver': fields.String,
-            # 'territory': fields.String,
-            # 'server_name': fields.String,
-        }
+    @pre_load
+    def convert_tuple_to_dict(self, data: tuple, **kwargs) -> dict:
+        dict_out = {}
+        dict_out['stb_type'] = data[0]
+        dict_out['pin'] = data[1]
+        dict_out['ip'] = data[2]
+        dict_out['sw_ver'] = data[3]
+        dict_out['territory'] = data[4]
+        dict_out['server_name'] = data[5]
+        return dict_out
 
-    def marshal_tuple(self, func_output: tuple, http_code: int, func_name: str=None) -> tuple[object, int]:
-        model = self.query_stb_info_model
-        dao = TupleQueryStbInfoDao(func_output)
-        if func_output == {} or func_output is None:
-            raise ValueError(func_output)
-        # try:
-        #     if func_output == {} or func_output is None:
-        #         raise ValueError(func_output)
-        # except ValueError as e:
-        #     app.logger.info(e)
-        #     app.logger.error(format_exc())
-        #     func_output = None
-        #     http_code = 400
-        self.app.logger.info(func_name)
-        return marshal(data=dao, fields=model), http_code
-
-class TupleQueryStbInfoDao(object):
-    def __init__(self, tuple_out: tuple):
-        self.tuple_out = tuple_out
-        # self.stb_type = tuple_out[0]
-        # self.pin = tuple_out[1]
-        # self.ip = tuple_out[2]
-        # self.sw_ver = tuple_out[3]
-        # self.territory = tuple_out[4]
-        # self.server_name = tuple_out[5]
-
+    @post_load
+    def getter_result(self, data, **kwargs):
+        return QueryStbInfoOut(**data)

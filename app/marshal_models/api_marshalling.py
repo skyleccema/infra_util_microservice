@@ -359,10 +359,10 @@ class MarshallingHandler:
         if func_name == "get_rack_slot_by_ip":
             model = self.get_rack_slot_by_ip_model
             dao = TupleGetRackSlotByIpDao(func_output)
-        elif func_name == "query_stb_info":
-            # model = self.query_stb_info_schema
-            model = self.query_stb_info_model
-            dao = func_output#TupleQueryStbInfoDao(func_output)
+        # elif func_name == "query_stb_info":
+        #     # model = self.query_stb_info_schema
+        #     model = self.query_stb_info_model
+        #     dao = func_output#TupleQueryStbInfoDao(func_output)
         elif func_name == "query_stb_project_info":
             model = self.query_stb_project_info_model
             dao = TupleQueryStbProjectInfoDao(func_output)
