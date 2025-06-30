@@ -1,1 +1,3 @@
 from .query_stb_info_schema import QueryStbInfoSchemaIn
+from .available_slots_schema import AvailableSlotsSchemaIn
+from .get_stb_status_broken_schema import GetStbStatusBrokenSchemaIn

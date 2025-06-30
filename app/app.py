@@ -24,12 +24,12 @@ import logging
 from .marshal_models.api_marshalling import MarshallingHandler
 from .marshal_models.generic_models import (ListGenericModel,
                                             im)
-from .marshal_models import (AvailableSlotsModel, AvailableSlotsIn,
+from .marshal_models import (QueryStbInfoDTOOut, AvailableSlotsDTOOut, AvailableSlotsOut,
                              GetIpModel, GetIpIn,
-                             GetStbStatusBrokenModel, GetStbStatusBrokenIn)
+                             GetStbStatusBrokenOut, GetStbStatusBrokenDTOOut)
 # TMP IMPORTS
-from .validation_schema.query_stb_info_schema import QueryStbInfoSchemaIn
-from .marshal_models.query_stb_info_model import QueryStbInfoDTOOut
+from .validation_schema import (QueryStbInfoSchemaIn, AvailableSlotsSchemaIn,
+                                GetStbStatusBrokenSchemaIn)
 
 dotenv_path = 'env/.env' # container in /app/ and locally in {HOME}/github_repo
 logfile = "logs/app.log" # container in /app/ and locally in {HOME}/github_repo
@@ -132,31 +132,35 @@ class QueryStbInfo(Resource):
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
 @api.route("/get_stb_status_broken")
 class GetStbStatusBroken(Resource):
+    def __init__(self, *args, **kwargs):
+        self.schema = GetStbStatusBrokenSchemaIn()
+        self.out_schema = GetStbStatusBrokenDTOOut()
+        self.out_model = im(api, "out_model query_stb_info",
+                            {'broken': fields.Boolean})
+        super().__init__(*args, kwargs)
     @api.expect( im( api,"poc_input_im",
                      {'ip': fields.String, 'slot': fields.Integer} ) )
     def post(self):
-        validated_input = GetStbStatusBrokenIn(**api.payload)#BoolGeneric(get_stb_status_broken(ip, slot))
-        app.logger.debug("validated_input.ip,validated_input.slot:\t%s\t%i",validated_input.ip,validated_input.slot)
-        # get_stb_status_broken_model = GetStbStatusBrokenModel(api,app)
-        # return get_stb_status_broken_model.marshal_bool(get_stb_status_broken(ip, slot), 200)
-        bool_generic_model = GetStbStatusBrokenModel(api, app)
-        func_output = get_stb_status_broken(validated_input.ip,validated_input.slot)
-        app.logger.debug(get_stb_status_broken(validated_input.ip,validated_input.slot))
-        return bool_generic_model.marshal_bool(func_output, 200)
-        # return mh.marshal_bool(get_stb_status_broken(ip, slot), 200, "get_stb_status_broken")
+        data = self.schema.load(api.payload)#BoolGeneric(get_stb_status_broken(ip, slot))
+        app.logger.debug("data.ip,data.slot:\t%s\t%i",data['ip'],data['slot'])
+        func_output = get_stb_status_broken(data['ip'],data['slot'])
+        app.logger.debug(get_stb_status_broken(data['ip'],data['slot']))
+        my_dto = self.out_schema.load(func_output)
+        return marshal(my_dto,self.out_model)['broken'], 200
 
-
-# @api.route("/get_stb_status_broken/<ip>/<slot>")
+# @api.route("/get_stb_status_broken")
 # class GetStbStatusBroken(Resource):
-#     @api.expect(bool_model)
-#     def get(self, ip, slot):
-#         app.logger.debug(get_stb_status_broken(ip, slot))
+#     @api.expect( im( api,"poc_input_im",
+#                      {'ip': fields.String, 'slot': fields.Integer} ) )
+#     def post(self):
+#         validated_input = GetStbStatusBrokenIn(**api.payload)#BoolGeneric(get_stb_status_broken(ip, slot))
+#         app.logger.debug("validated_input.ip,validated_input.slot:\t%s\t%i",validated_input.ip,validated_input.slot)
 #         # get_stb_status_broken_model = GetStbStatusBrokenModel(api,app)
 #         # return get_stb_status_broken_model.marshal_bool(get_stb_status_broken(ip, slot), 200)
-#         validated_input = BoolGeneric(**api.payload)#BoolGeneric(get_stb_status_broken(ip, slot))
-#         bool_generic_model = BoolGenericModel(api,app)
+#         bool_generic_model = GetStbStatusBrokenModel(api, app)
 #         func_output = get_stb_status_broken(validated_input.ip,validated_input.slot)
-#         return bool_generic_model.marshal_bool(func_output, 200, "get_stb_status_broken")
+#         app.logger.debug(get_stb_status_broken(validated_input.ip,validated_input.slot))
+#         return bool_generic_model.marshal_bool(func_output, 200)
 #         # return mh.marshal_bool(get_stb_status_broken(ip, slot), 200, "get_stb_status_broken")
 
 
@@ -217,25 +221,61 @@ class GetRackSlotByIp(Resource):
 # @api.route("/available_slots/<proj>/<typ>")
 @api.route("/available_slots")
 class AvailableSlots(Resource):
+    def __init__(self, *args, **kwargs):
+        self.schema = AvailableSlotsSchemaIn()
+        self.out_schema = AvailableSlotsDTOOut()
+        self.out_model = im(api, "out_model available_slots",
+                            {'slots': fields.Integer})
+        super().__init__(*args, kwargs)
+
     @api.expect(im(api,'available slot schema',
                 {'proj': fields.String, 'typ': fields.String}))
     def post(self):
-        #understand why marshal_int is now working
-        # my_type = str(type(available_slots(proj, typ)))
-        # return marshal_str(my_type, 200)
-        # int_generic_model = IntGenericModel(api, app)
-        # return int_generic_model.marshal_int(available_slots(proj, typ), 200, "available_slots")
-        # return int.marshal_int(available_slots(proj, typ), 200, "available_slots")
-        validated_input = AvailableSlotsIn(**api.payload)
-        app.logger.debug('validated_inputs\t%s\t%s',validated_input.proj, validated_input.typ)
-        available_slots_model = AvailableSlotsModel(api,app)
-        return available_slots_model.marshal_int(
-            available_slots(validated_input.proj, validated_input.typ),
-            200
-        )
-        #OLD WORKING
-        # available_slots_model = AvailableSlotsModel(api,app)
-        # return available_slots_model.marshal_int(available_slots(proj,typ), 200)
+        # catching validation error
+        try:
+            # parse and validate input
+            app.logger.debug(api.payload)
+            app.logger.debug("my_model_in:\t%s", im(api,'available slot schema',
+                {'proj': fields.String, 'typ': fields.String}))
+            data = self.schema.load(api.payload)
+            # output DTO model creation
+            app.logger.debug("data['proj'], data['typ']:\t%s\t%s", data['proj'], data['typ'])
+            app.logger.debug("types:\t%s\t%s", type(data['proj']), type(data['typ']))
+            app.logger.debug("available_slots( data['proj'], data['typ'] ): \t%s",
+                             str( available_slots( data['proj'], data['typ'] ) ))
+            app.logger.debug("type:\t%s", type( available_slots( data['proj'], data['typ'] ) ))
+            my_dto = self.out_schema.load(available_slots( data['proj'], data['typ'] ))
+            app.logger.debug("my_dto:\t%s", str(my_dto))
+            app.logger.debug("my_model_out:\t%s", str(self.out_model))
+            # return marshalling of dto with output model
+            return marshal(my_dto, self.out_model)['slots'], 200
+            # return marshal(my_dto, self.out_model), 200
+            # return my_dto.__dict__['slots'], 200
+        except ValidationError as err:
+            # returning validation error
+            return {
+                'message': 'Validation Error',
+                'errors': err.msg
+            }, 400
+
+
+    # def post(self):
+    #     #understand why marshal_int is now working
+    #     # my_type = str(type(available_slots(proj, typ)))
+    #     # return marshal_str(my_type, 200)
+    #     # int_generic_model = IntGenericModel(api, app)
+    #     # return int_generic_model.marshal_int(available_slots(proj, typ), 200, "available_slots")
+    #     # return int.marshal_int(available_slots(proj, typ), 200, "available_slots")
+    #     validated_input = AvailableSlotsIn(**api.payload)
+    #     app.logger.debug('validated_inputs\t%s\t%s',validated_input.proj, validated_input.typ)
+    #     available_slots_model = AvailableSlotsModel(api,app)
+    #     return available_slots_model.marshal_int(
+    #         available_slots(validated_input.proj, validated_input.typ),
+    #         200
+    #     )
+    #     #OLD WORKING
+    #     # available_slots_model = AvailableSlotsModel(api,app)
+    #     # return available_slots_model.marshal_int(available_slots(proj,typ), 200)
 
 # DONE
 # tested with http://127.0.0.1:5000/get_auto_reboot
