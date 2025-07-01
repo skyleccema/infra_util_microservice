@@ -14,7 +14,7 @@ class QueryStbInfoOut:
     territory: ma_fields.String
     server_name: ma_fields.String
 
-class QueryStbInfoDTOOut(Schema):
+class QueryStbInfoDTO(Schema):
     # tuple_out = ma_fields.List(ma_fields.String,required=True)
     stb_type = ma_fields.String(required=True)
     pin = ma_fields.String(required=True)

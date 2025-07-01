@@ -1,4 +1,5 @@
 import json
+from dataclasses import asdict
 
 from flask import Flask
 from flask_restx import Resource, Api, fields, ValidationError, marshal
@@ -24,12 +25,15 @@ import logging
 from .marshal_models.api_marshalling import MarshallingHandler
 from .marshal_models.generic_models import (ListGenericModel,
                                             im)
-from .marshal_models import (QueryStbInfoDTOOut, AvailableSlotsDTOOut, AvailableSlotsOut,
-                             GetIpModel, GetIpIn,
-                             GetStbStatusBrokenOut, GetStbStatusBrokenDTOOut)
+from .marshal_models import (QueryStbInfoDTO, AvailableSlotsDTOOut, AvailableSlotsOut,
+                             GetIpDTOOut, GetIpOut,
+                             GetStbStatusBrokenOut, GetStbStatusBrokenDTOOut,
+                             GetAllStbDTOOut, GetAllStbOut,
+                             FetchRackSlotTypeByProjectOut, FetchRackSlotTypeByProjectDTO)
 # TMP IMPORTS
 from .validation_schema import (QueryStbInfoSchemaIn, AvailableSlotsSchemaIn,
-                                GetStbStatusBrokenSchemaIn)
+                                GetStbStatusBrokenSchemaIn, GetIpSchemaIn,
+                                GetAllStbSchemaIn, FetchRackSlotTypeByProjectSchemaIn)
 
 dotenv_path = 'env/.env' # container in /app/ and locally in {HOME}/github_repo
 logfile = "logs/app.log" # container in /app/ and locally in {HOME}/github_repo
@@ -89,7 +93,7 @@ class FetchSlotsVersionsWithDynamicFilterNone(Resource):
 class QueryStbInfo(Resource):
     def __init__(self, *args, **kwargs):
         self.schema = QueryStbInfoSchemaIn()
-        self.out_schema = QueryStbInfoDTOOut()
+        self.out_schema = QueryStbInfoDTO()
         self.out_model = im(api, "out_model query_stb_info",
                             {'stb_type': fields.String,
                              'pin': fields.String,
@@ -192,11 +196,81 @@ class QueryStbProjectInfo(Resource):
 # library function return a list [<infra_utils.models.infradb_Iaas.InfraDBStbIaas object at 0x72892c7256a0>, \
 # <infra_utils.models.infradb_Iaas.InfraDBStbIaas object at 0x72892c6c4cd0>, ... ]
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
+
 @api.route("/get_all_stb")
 class GetAllStb(Resource):
-    def get(self):
-        return mh.marshal_list(get_all_stb(), 200, "get_all_stb")
-        # return mh.marshal_dict(get_all_stb(), 200, "get_all_stb")
+    def __init__(self, *args, **kwargs):
+        self.schema = GetAllStbSchemaIn()
+        self.out_schema = GetAllStbDTOOut()
+        self.out_model = im(api, "out_model get_all_stb",
+                            {"__bind_key__": fields.String,
+                                "__tablename__": fields.String,
+                                "stb_id": fields.Integer,
+                                "slot_id": fields.Integer,
+                                "smart_card_id": fields.Integer,
+                                "account_id": fields.Integer,
+                                "country_code": fields.String,
+                                "hardware_name": fields.String,
+                                "chipId": fields.String,
+                                "deviceid": fields.String,
+                                "mac_address_br": fields.String,
+                                "model_number": fields.String,
+                                "receiverId": fields.String,
+                                "project": fields.String,
+                                "version_number": fields.String,
+                                "serial_number": fields.String,
+                                "mac_address": fields.String,
+                                "ip": fields.String,
+                                "personalized_pin": fields.String,
+                                "stb_status": fields.Boolean,
+                                "auto_rebot": fields.Boolean,
+                                "note": fields.String,
+                                "used_for": fields.String,
+                                "last_as_status": fields.Boolean,
+                                "last_as_date": fields.DateTime,
+                                "last_modified": fields.DateTime,
+                                "stb_status_info": fields.String,
+                                "last_as_call": fields.DateTime})
+        super().__init__(*args, kwargs)
+
+    # @api.expect(im(api, 'get_all_stb input model',
+    #             {}))
+    def post(self):
+        # catching validation error
+        try:
+            # parse and validate input
+            # app.logger.debug(api.payload)
+            # app.logger.debug("my_model_in:\t%s", im(api, 'query_stb_info input model',
+            #     {'slot': fields.Integer,
+            #      'server_name': fields.String,
+            #      'server_ip': fields.String}))
+            # data = self.schema.load(api.payload)
+            # output DTO model creation
+            # app.logger.debug("data['ip'], data['slot']:\t%i\t%s\t%s", data['slot'],
+            #                  data['server_name'], data['server_ip'])
+            # app.logger.debug("types:%s\t%s\t%s", type(data['slot']),
+            #                  type(data['server_name']), type(data['server_ip']))
+            func_output = get_all_stb()
+            app.logger.debug("str(get_ip(data['slot'],data['server_name'], data['server_ip'])): \t%s",
+                             str(func_output) )
+            app.logger.debug("type:\t%s", type(func_output))
+            my_dto = self.out_schema.load(func_output)
+            app.logger.debug("my_dto:\t%s", str(my_dto))
+            app.logger.debug("my_model_out:\t%s", str(self.out_model))
+            # return marshalling of dto with output model
+            return marshal(my_dto, self.out_model), 200
+        except ValidationError as err:
+            # returning validation error
+            return {
+                'message': 'Validation Error',
+                'errors': err.msg
+            }, 400
+
+# @api.route("/get_all_stb")
+# class GetAllStb(Resource):
+#     def get(self):
+#         return mh.marshal_list(get_all_stb(), 200, "get_all_stb")
+#         # return mh.marshal_dict(get_all_stb(), 200, "get_all_stb")
 
 # tested with http://127.0.0.1:5000/put_stb/?
 # ask francesco
@@ -292,37 +366,47 @@ class GetAutoReboot(Resource):
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
 @api.route("/get_ip")
 class GetIp(Resource):
-    @api.expect(im(api, 'get_ip input model',
-                   {'slot': fields.Integer,
-                    'server': fields.String, 'ip': fields.String}))
-    def post(self):
-        # fetch_rack_slot_type_by_project(proj), 200
-        validated_input = GetIpIn(**api.payload)
-        app.logger.debug('validated_inputs\t%i\t%s\t%s',validated_input.slot,
-                         validated_input.server, validated_input.ip)
-        app.logger.info("get_ip(slot,server,ip) type: %s",
-                        type(get_ip(validated_input.slot,validated_input.server,
-                                    validated_input.ip)) )
-        get_ip_model = GetIpModel(api,app)
-        return get_ip_model.marshal_str(
-            get_ip(
-                validated_input.slot,
-                validated_input.server,
-                validated_input.ip),
-            200
-        )
-#OLD WORKING
-# @api.route("/get_ip/<slot>/<server>/<ip>")
-# class GetIp(Resource):
-#     def get(self, slot, server, ip):
-#         # fetch_rack_slot_type_by_project(proj), 200
-#         app.logger.info("get_ip(slot,server,ip) type: %s", type(get_ip(slot, server, ip)))
-#         get_ip_model = GetIpModel(api, app)
-#         return get_ip_model.marshal_str(str(get_ip(slot, server, ip)), 200)
+    def __init__(self, *args, **kwargs):
+        self.schema = GetIpSchemaIn()
+        self.out_schema = GetIpDTOOut()
+        self.out_model = im(api, "out_model get_ip",
+                            {'slot_ip': fields.String})
+        super().__init__(*args, kwargs)
 
-        # str_generic_model = StrGenericModel(api,app)
-        # return str_generic_model.marshal_str(get_ip(slot,server,ip), 200, "get_ip")
-        # return mh.marshal_str(str(get_ip(slot,server,ip)), 200, "get_ip")
+    @api.expect(im(api, 'get_ip input model',
+                {'slot': fields.Integer,
+                 'server_name': fields.String,
+                 'server_ip': fields.String}))
+    def post(self):
+        # catching validation error
+        try:
+            # parse and validate input
+            app.logger.debug(api.payload)
+            app.logger.debug("my_model_in:\t%s", im(api, 'query_stb_info input model',
+                {'slot': fields.Integer,
+                 'server_name': fields.String,
+                 'server_ip': fields.String}))
+            data = self.schema.load(api.payload)
+            # output DTO model creation
+            app.logger.debug("data['ip'], data['slot']:\t%i\t%s\t%s", data['slot'],
+                             data['server_name'], data['server_ip'])
+            app.logger.debug("types:%s\t%s\t%s", type(data['slot']),
+                             type(data['server_name']), type(data['server_ip']))
+            func_output = get_ip(data['slot'],data['server_name'], data['server_ip'])
+            app.logger.debug("str(get_ip(data['slot'],data['server_name'], data['server_ip'])): \t%s",
+                             str(func_output) )
+            app.logger.debug("type:\t%s", type(func_output))
+            my_dto = self.out_schema.load(func_output)
+            app.logger.debug("my_dto:\t%s", str(my_dto))
+            app.logger.debug("my_model_out:\t%s", str(self.out_model))
+            # return marshalling of dto with output model
+            return marshal(my_dto, self.out_model)['slot_ip'], 200
+        except ValidationError as err:
+            # returning validation error
+            return {
+                'message': 'Validation Error',
+                'errors': err.msg
+            }, 400
 
 
 # DONE
@@ -361,13 +445,68 @@ class FetchSlotsVersions(Resource):
 # tested with http://127.0.0.1:5000/fetch_rack_slot_type_by_project/PCC but also CERRI
 # library function return a list [{'rack_name': '4.0 META3', 'slot': 3, 'device_type': 'Falcon'}, ...]
 # tested with swagger /fetch_rack_slot_type_by_project endpoint and proj=PCC but also CERRI
-@api.route("/fetch_rack_slot_type_by_project/<proj>")
+@api.route("/fetch_rack_slot_type_by_project")
 class FetchRackSlotTypeByProject(Resource):
-    def get(self, proj):
-        # DictionaryGenericModel = DictGenericModel(api, app)
-        # return DictionaryGenericModel.marshal_dict(fetch_rack_slot_type_by_project(proj), 200, "fetch_rack_slot_type_by_project")
-        return mh.marshal_list(fetch_rack_slot_type_by_project(proj), 200, "fetch_rack_slot_type_by_project")
-        # return mh.marshal_list(fetch_rack_slot_type_by_project(proj), 200, "fetch_rack_slot_type_by_project")
+    def __init__(self, *args, **kwargs):
+        self.schema = FetchRackSlotTypeByProjectSchemaIn()
+        self.out_schema = FetchRackSlotTypeByProjectDTO()
+        self.out_element_model = im(api, "out_model fetch_rack_slot_type_by_project",
+                            {
+                                'rack_name': fields.String(required=True, description='The rack name'),
+                                'slot': fields.Integer(required=True, description='Slot number'),
+                                'device_type': fields.String(description='Device type')
+                            })
+        self.out_model = im(api, "out_model fetch_rack_slot_type_by_project",
+                            {
+                                'my_list': fields.List(fields.Nested(self.out_element_model),
+                                                       required=True, description='The rst list')
+                            })
+        super().__init__(*args, kwargs)
+
+    @api.expect(im(api, 'fetch_rack_slot_type_by_project input model',
+                {'project': fields.String}))
+    def post(self):
+        # catching validation error
+        try:
+            # parse and validate input
+            app.logger.debug(api.payload)
+            app.logger.debug("my_model_in:\t%s", im(api, 'fetch_rack_slot_type_by_project input model',
+                {'project': fields.String}))
+            data = self.schema.load(api.payload)
+            # output DTO model creation
+            app.logger.debug("data['project'], data['slot']:\t%s", data['project'])
+            app.logger.debug("types:\t%s", type(data['project']))
+            func_output = fetch_rack_slot_type_by_project(data['project'])
+            app.logger.debug("str(func_output): \t%s",
+                             str(func_output) )
+            app.logger.debug("type:\t%s", type(func_output))
+            my_dto = self.out_schema.load({'my_list': func_output})
+            app.logger.debug("my_dto:\t%s", str(my_dto))
+            app.logger.debug("my_model_out:\t%s", str(self.out_model))
+            # return marshalling of dto with output model
+            return marshal(my_dto, self.out_model), 200
+            # my_dto = self.out_schema.load({'my_list': func_output})
+            # app.logger.debug("my_dto:\t%s", str(my_dto['my_list']))
+            # app.logger.debug("my_model_out:\t%s", str(self.out_model))
+            # # return marshalling of dto with output model
+            # return marshal(my_dto['my_list'], self.out_model), 200
+
+        except ValidationError as err:
+            # returning validation error
+            return {
+                'message': 'Validation Error',
+                'errors': err.msg
+            }, 400
+
+
+
+# @api.route("/fetch_rack_slot_type_by_project/<proj>")
+# class FetchRackSlotTypeByProject(Resource):
+#     def get(self, proj):
+#         # DictionaryGenericModel = DictGenericModel(api, app)
+#         # return DictionaryGenericModel.marshal_dict(fetch_rack_slot_type_by_project(proj), 200, "fetch_rack_slot_type_by_project")
+#         return mh.marshal_list(fetch_rack_slot_type_by_project(proj), 200, "fetch_rack_slot_type_by_project")
+#         # return mh.marshal_list(fetch_rack_slot_type_by_project(proj), 200, "fetch_rack_slot_type_by_project")
 
 
 # DONE

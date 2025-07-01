@@ -1,3 +1,6 @@
 from .query_stb_info_schema import QueryStbInfoSchemaIn
 from .available_slots_schema import AvailableSlotsSchemaIn
 from .get_stb_status_broken_schema import GetStbStatusBrokenSchemaIn
+from .get_ip_schema import GetIpSchemaIn
+from .get_all_stb_schema import GetAllStbSchemaIn
+from .fetch_rack_slot_type_by_project_schema import FetchRackSlotTypeByProjectSchemaIn
